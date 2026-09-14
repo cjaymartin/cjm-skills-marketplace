@@ -101,7 +101,11 @@ disallowed-tools: Read, Grep, Glob, Edit, Write, NotebookEdit
 argument-hint: [test-case-path]
 ```
 
-The test case is injected into the fork's prompt with `` !`cat "$1"` ``, so the fork needs no file-read tool. `disallowed-tools` then removes every tool that could reach the source.
+The test case is injected into the fork's prompt with `` !`cat "$ARGUMENTS"` ``, so the fork needs no file-read tool. `disallowed-tools` then removes every tool that could reach the source.
+
+Positional `$1` does **not** interpolate inside a `` !`...` `` injection — it resolves to an empty string. Use `$ARGUMENTS`, or a named argument declared in frontmatter. See [the probe results](../../research/2026-09-14-mechanism-probes.md).
+
+The restriction is enforced at invocation, not by hiding the tool: the fork still sees `Read` in its tool list and gets denied on use. So the skill says up front that those tools will be denied, to save the fork a wasted turn.
 
 **Bash stays allowed** because the fork must start the app. The SKILL.md instructs the fork: run only commands the test case names, and never read source files. That is instruction, not enforcement, and the spec records it as a known soft edge.
 
@@ -422,12 +426,16 @@ Plan per skill:
 
 Four mechanisms this design leans on that I have **not** confirmed on this machine. Each is checked with a throwaway skill before the skill that depends on it gets written. If one fails, the listed fallback is taken and this spec is updated.
 
-| Mechanism | Fallback if it fails |
+**All four were probed on 2026-09-14.** Full write-up: [docs/research/2026-09-14-mechanism-probes.md](../../research/2026-09-14-mechanism-probes.md).
+
+| Mechanism | Result |
 |---|---|
-| A symlinked `~/.claude/skills/<name>` lists and runs correctly | copy-sync mode in `link-skills.sh`, run after each edit |
-| `context: fork` with `background: false` returns the fork's result to the caller in the same turn | the caller dispatches a subagent directly and passes the same prompt |
-| `$1` / `$name` interpolates inside a `` !`command` `` injection | the caller reads the test case and passes its content inline in the invocation |
-| `disallowed-tools` actually removes those tools inside a forked skill | blindness falls back to instruction only, and the SKILL.md says so plainly rather than claiming enforcement |
+| A symlinked `~/.claude/skills/<name>` lists and runs correctly | CONFIRMED |
+| `context: fork` with `background: false` returns the fork's result to the caller in the same turn | CONFIRMED |
+| `$1` interpolates inside a `` !`command` `` injection | **FALLBACK TAKEN** — `$1` resolves to empty. Use `$ARGUMENTS` or a named argument; both confirmed working |
+| `disallowed-tools` actually removes those tools inside a forked skill | CONFIRMED — denied at invocation, though the tool stays visible in the fork's list |
+
+One further observation: a skill created mid-session is not invocable at once. A rescan picks it up shortly after. That is a lag, not a restart requirement.
 
 ## Out of scope
 
