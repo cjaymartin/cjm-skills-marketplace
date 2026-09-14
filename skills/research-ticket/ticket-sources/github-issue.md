@@ -45,5 +45,5 @@ a triage decision that the body leaves out.
 ## If `gh` fails
 
 An authentication error or a missing repository is not a reason to guess. Report the
-exact error and fall back to [plain-text.md](plain-text.md) by asking the human to paste
-the issue.
+exact error and fall back to the plain-text source by asking the human to paste the
+issue.

@@ -1,7 +1,7 @@
 # Ticket source: aitickets — NOT IMPLEMENTED
 
-This adapter is a placeholder. Until it is built, fall back to
-[plain-text.md](plain-text.md).
+This adapter is a placeholder. Until it is built, fall back to the plain-text source,
+which the skill links directly.
 
 ## What this will be
 

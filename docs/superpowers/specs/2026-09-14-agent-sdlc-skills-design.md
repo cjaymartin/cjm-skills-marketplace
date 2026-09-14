@@ -1,7 +1,8 @@
 # Design: agent-driven SDLC skills
 
 Date: 2026-09-14
-Repo: `skillz` (private, GitHub, owner `abraxas`)
+Status: **built** on 2026-09-14. All seven skills exist and are installed.
+Repo: `skillz` (private, GitHub, `cjaymartin/skillz`)
 Author: C. Jay Martin
 
 ## Contents
