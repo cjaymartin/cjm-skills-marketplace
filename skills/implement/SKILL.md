@@ -94,7 +94,10 @@ skills remove the typing between them.
 ## The name clash
 
 `mattpocock-skills` also ships an `implement` skill. Theirs is still there as
-`/mattpocock-skills:implement`. The bare `/implement` is this one.
+`/mattpocock-skills:implement`.
+
+Installed as a plugin, this one is `/agent-sdlc:implement` and there is no clash at all.
+Installed by symlink from a clone, this one takes the bare `/implement`.
 
 ## What this does not cover
 

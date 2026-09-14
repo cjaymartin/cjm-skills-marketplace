@@ -13,13 +13,16 @@ person can hold several tickets at once. Five human decision points stay in the 
 
 | Skill | Ticket step | What it does |
 |---|---|---|
-| [`/research-ticket`](skills/research-ticket/SKILL.md) | 02 research | Reads the ticket, the code, the git history and prior tickets. Writes a brief. Asks the questions only you can answer. |
-| [`/red-green-e2e`](skills/red-green-e2e/SKILL.md) | 03 + 06 replicate | Writes a plain-English test case. Proves it fails before the fix, and passes after. |
-| [`/green-green-e2e`](skills/green-green-e2e/SKILL.md) | regression | Proves behavior that already works still works after a change. |
-| [`/tdd-implement`](skills/tdd-implement/SKILL.md) | 04 + 05 build | Unit tests first, at seams you agreed to. Then the code. |
-| [`/self-review`](skills/self-review/SKILL.md) | 07 self-review | Parallel reviewers across legitimacy, correctness, error handling, tests, security and style. |
-| [`/implement`](skills/implement/SKILL.md) | 02 → 07 | Runs the whole chain. Resumable. |
+| [`research-ticket`](skills/research-ticket/SKILL.md) | 02 research | Reads the ticket, the code, the git history and prior tickets. Writes a brief. Asks the questions only you can answer. |
+| [`red-green-e2e`](skills/red-green-e2e/SKILL.md) | 03 + 06 replicate | Writes a plain-English test case. Proves it fails before the fix, and passes after. |
+| [`green-green-e2e`](skills/green-green-e2e/SKILL.md) | regression | Proves behavior that already works still works after a change. |
+| [`tdd-implement`](skills/tdd-implement/SKILL.md) | 04 + 05 build | Unit tests first, at seams you agreed to. Then the code. |
+| [`self-review`](skills/self-review/SKILL.md) | 07 self-review | Parallel reviewers across legitimacy, correctness, error handling, tests, security and style. |
+| [`implement`](skills/implement/SKILL.md) | 02 → 07 | Runs the whole chain. Resumable. |
 | `blind-e2e` | — | The engine. Not called directly. |
+
+Installed as a plugin they are `/agent-sdlc:implement` and so on. Installed from a clone
+by symlink they are the plain `/implement`. See [Install it](#install-it).
 
 ## How the chain runs
 
@@ -32,7 +35,7 @@ person can hold several tickets at once. Five human decision points stay in the 
 | 5 | You step through the proof by hand | You confirm |
 | 6 | `self-review` | You read the findings |
 
-Progress is written to `.sdlc/<ticket-id>/state.md` after every step, so `/implement`
+Progress is written to `.sdlc/<ticket-id>/state.md` after every step, so `implement`
 picks up where it stopped.
 
 ## Why "blind"
@@ -57,67 +60,9 @@ GitHub issues first, but the reader is swappable. One markdown file per source i
 GitHub issue, markdown file, plain text, and a stub for a future system. Adding a source
 means adding one file.
 
-## Installation
+## Install it
 
-### 1. Install the two prerequisite plugins
-
-`tdd-implement` and `self-review` call into these rather than restating them. Install
-both before using the chain.
-
-```bash
-claude plugin marketplace add anthropics/claude-plugins-official
-```
-
-```bash
-claude plugin install superpowers@claude-plugins-official
-```
-
-```bash
-claude plugin marketplace add mattpocock/skills
-```
-
-```bash
-claude plugin install mattpocock-skills@mattpocock
-```
-
-Check they landed:
-
-```bash
-claude plugin list
-```
-
-### 2. Get this repo
-
-```bash
-git clone git@github.com:cjaymartin/skillz.git ~/WebstormProjects/skillz
-```
-
-### 3a. Install the skills on this machine
-
-This is the option to use on a machine where you also edit the skills.
-
-```bash
-cd ~/WebstormProjects/skillz && scripts/link-skills.sh
-```
-
-It symlinks each skill into `~/.claude/skills/`. Edit the repo and the skill changes at
-once, with no reinstall step.
-
-You should see seven lines, each ending `OK`:
-
-```
-blind-e2e            link   OK
-green-green-e2e      link   OK
-implement            link   OK
-red-green-e2e        link   OK
-research-ticket      link   OK
-self-review          link   OK
-tdd-implement        link   OK
-```
-
-### 3b. Or install it as a plugin
-
-This is the option for anyone who only wants to use the skills, not edit them.
+Two commands.
 
 ```bash
 claude plugin marketplace add cjaymartin/skillz
@@ -127,62 +72,88 @@ claude plugin marketplace add cjaymartin/skillz
 claude plugin install agent-sdlc@skillz
 ```
 
-Skills then answer to `/agent-sdlc:implement`, `/agent-sdlc:research-ticket`, and so on.
-The plain `/implement` form belongs to the symlink install only.
+That is the whole install. Works over SSH against the private repo, no extra setup.
 
-### 4. Check it worked
+The skills then answer to `/agent-sdlc:implement`, `/agent-sdlc:research-ticket`, and so
+on. Tab completion after `/agent-sdlc:` lists them.
+
+### Install the two prerequisites too
+
+`tdd-implement` and `self-review` call into these rather than restating them. Without
+them those two skills still run, but they lose the method they delegate to.
 
 ```bash
-ls -l ~/.claude/skills/
+claude plugin marketplace add anthropics/claude-plugins-official && claude plugin install superpowers@claude-plugins-official
 ```
 
-Then type `/` in Claude Code and look for `implement`, `research-ticket`,
-`red-green-e2e`, `green-green-e2e`, `tdd-implement` and `self-review`.
+```bash
+claude plugin marketplace add mattpocock/skills && claude plugin install mattpocock-skills@mattpocock
+```
+
+### Check it worked
+
+```bash
+claude plugin list
+```
+
+You want `agent-sdlc@skillz` marked enabled. Then type `/agent-sdlc:` in Claude Code and
+look for six skills.
 
 `blind-e2e` will **not** appear. It is marked not user-invocable on purpose — only the
-other skills call it.
+other skills call it. Its absence is the install working, not failing.
 
-**If nothing appears, wait.** A new or edited skill registers after a short rescan, not
-immediately. The first call right after installing can say "Unknown skill". That is the
-lag, not a failure.
+**If nothing appears, wait.** A newly installed skill registers after a short rescan, not
+immediately. The first call right after installing can say "Unknown skill".
 
-**If a skill still never appears**, symlink discovery has a known bug in some Claude Code
-versions. Reinstall in copy mode:
-
-```bash
-cd ~/WebstormProjects/skillz && scripts/link-skills.sh --copy
-```
-
-In copy mode you must rerun that command after every edit, because the copy does not
-track the repo.
-
-## Updating
-
-Symlink install:
-
-```bash
-cd ~/WebstormProjects/skillz && git pull && scripts/link-skills.sh
-```
-
-Plugin install:
+### Updating
 
 ```bash
 claude plugin marketplace update skillz && claude plugin update agent-sdlc@skillz
 ```
 
-## Uninstalling
-
-```bash
-cd ~/WebstormProjects/skillz && scripts/link-skills.sh --unlink
-```
-
-It removes only what it installed. Anything else in `~/.claude/skills/` is left alone,
-and it says so rather than deleting it.
-
-Plugin install:
+### Uninstalling
 
 ```bash
 claude plugin uninstall agent-sdlc@skillz
+```
+
+## Working on the skills themselves
+
+The plugin install gives you a **copy** in `~/.claude/plugins/cache/`. Editing that copy
+is pointless — the next update overwrites it.
+
+To edit the skills and have your edits live at once, install from a clone instead:
+
+```bash
+git clone git@github.com:cjaymartin/skillz.git ~/WebstormProjects/skillz
+```
+
+```bash
+cd ~/WebstormProjects/skillz && scripts/link-skills.sh
+```
+
+That symlinks each skill into `~/.claude/skills/`. Edit the repo, the skill changes. No
+reinstall.
+
+You should see seven lines, each ending `OK`. The commands are then the plain
+`/implement`, `/research-ticket` and so on, with no `agent-sdlc:` prefix.
+
+**Do not run both installs at once.** You would get every skill twice in the menu. Pick
+one:
+
+```bash
+scripts/link-skills.sh --unlink     # drop the symlinks, keep the plugin
+```
+
+```bash
+claude plugin uninstall agent-sdlc@skillz    # drop the plugin, keep the symlinks
+```
+
+If a symlinked skill never appears in the menu, symlink discovery has a known bug in
+some Claude Code versions. Reinstall in copy mode and rerun it after every edit:
+
+```bash
+cd ~/WebstormProjects/skillz && scripts/link-skills.sh --copy
 ```
 
 ## Using it in a project
@@ -200,7 +171,7 @@ Nothing to add to the project. The skills create what they need:
 Start a ticket:
 
 ```bash
-/implement #123
+/agent-sdlc:implement #123
 ```
 
 Or a pasted ticket, or a path to a markdown file. It asks for what it needs.
