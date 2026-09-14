@@ -5,6 +5,7 @@
 #   scripts/link-skills.sh              link every skill
 #   scripts/link-skills.sh blind-e2e    link one skill
 #   scripts/link-skills.sh --copy       copy instead of symlink
+#   scripts/link-skills.sh --unlink     remove every skill this script installed
 #
 # Copy mode exists because symlinked skills have had listing and validation bugs
 # reported against Claude Code. If a linked skill runs but never appears in the
@@ -22,6 +23,8 @@ for arg in "$@"; do
   case "$arg" in
     --copy) MODE=copy ;;
     --link) MODE=link ;;
+    --unlink) MODE=unlink ;;
+    -h|--help) sed -n '2,12p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 0 ;;
     -*) echo "unknown option: $arg" >&2; exit 2 ;;
     *) ONLY="$arg" ;;
   esac
@@ -52,6 +55,22 @@ for path in "${candidates[@]}"; do
   src="$SRC_DIR/$name"
   dest="$DEST_DIR/$name"
   skill_md="$src/SKILL.md"
+
+  if [ "$MODE" = unlink ]; then
+    if [ -L "$dest" ]; then
+      rm -f "$dest"
+      printf '%-20s %-6s removed\n' "$name" "$MODE"
+    elif [ -d "$dest" ] && [ -f "$dest/.installed-by-skillz" ]; then
+      rm -rf "$dest"
+      printf '%-20s %-6s removed\n' "$name" "$MODE"
+    elif [ -e "$dest" ]; then
+      printf '%-20s %-6s REFUSED %s was not installed by this script\n' "$name" "$MODE" "$dest"
+      failed=1
+    else
+      printf '%-20s %-6s not installed\n' "$name" "$MODE"
+    fi
+    continue
+  fi
 
   if [ ! -f "$skill_md" ]; then
     printf '%-20s %-6s FAILED  no SKILL.md in %s\n' "$name" "$MODE" "$src"

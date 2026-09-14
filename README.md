@@ -57,34 +57,153 @@ GitHub issues first, but the reader is swappable. One markdown file per source i
 GitHub issue, markdown file, plain text, and a stub for a future system. Adding a source
 means adding one file.
 
-## Prerequisites
+## Installation
 
-- [superpowers](https://github.com/obra/superpowers)
-- [mattpocock-skills](https://github.com/mattpocock/skills)
+### 1. Install the two prerequisite plugins
 
-`tdd-implement` and `self-review` call into both rather than restating them.
-
-## Install on this machine
+`tdd-implement` and `self-review` call into these rather than restating them. Install
+both before using the chain.
 
 ```bash
-scripts/link-skills.sh
+claude plugin marketplace add anthropics/claude-plugins-official
 ```
 
-Symlinks each skill into `~/.claude/skills/`. Edit the repo and the skill changes at
-once, with no reinstall. New and edited skills register after a short rescan, not
-immediately.
-
-Use `scripts/link-skills.sh --copy` if symlinked skills ever fail to appear in the skill
-list.
-
-## Install anywhere else
+```bash
+claude plugin install superpowers@claude-plugins-official
+```
 
 ```bash
-claude plugin marketplace add <this repo>
+claude plugin marketplace add mattpocock/skills
+```
+
+```bash
+claude plugin install mattpocock-skills@mattpocock
+```
+
+Check they landed:
+
+```bash
+claude plugin list
+```
+
+### 2. Get this repo
+
+```bash
+git clone git@github.com:cjaymartin/skillz.git ~/WebstormProjects/skillz
+```
+
+### 3a. Install the skills on this machine
+
+This is the option to use on a machine where you also edit the skills.
+
+```bash
+cd ~/WebstormProjects/skillz && scripts/link-skills.sh
+```
+
+It symlinks each skill into `~/.claude/skills/`. Edit the repo and the skill changes at
+once, with no reinstall step.
+
+You should see seven lines, each ending `OK`:
+
+```
+blind-e2e            link   OK
+green-green-e2e      link   OK
+implement            link   OK
+red-green-e2e        link   OK
+research-ticket      link   OK
+self-review          link   OK
+tdd-implement        link   OK
+```
+
+### 3b. Or install it as a plugin
+
+This is the option for anyone who only wants to use the skills, not edit them.
+
+```bash
+claude plugin marketplace add cjaymartin/skillz
+```
+
+```bash
 claude plugin install agent-sdlc@skillz
 ```
 
-Skills then answer to `/agent-sdlc:<name>`.
+Skills then answer to `/agent-sdlc:implement`, `/agent-sdlc:research-ticket`, and so on.
+The plain `/implement` form belongs to the symlink install only.
+
+### 4. Check it worked
+
+```bash
+ls -l ~/.claude/skills/
+```
+
+Then type `/` in Claude Code and look for `implement`, `research-ticket`,
+`red-green-e2e`, `green-green-e2e`, `tdd-implement` and `self-review`.
+
+`blind-e2e` will **not** appear. It is marked not user-invocable on purpose — only the
+other skills call it.
+
+**If nothing appears, wait.** A new or edited skill registers after a short rescan, not
+immediately. The first call right after installing can say "Unknown skill". That is the
+lag, not a failure.
+
+**If a skill still never appears**, symlink discovery has a known bug in some Claude Code
+versions. Reinstall in copy mode:
+
+```bash
+cd ~/WebstormProjects/skillz && scripts/link-skills.sh --copy
+```
+
+In copy mode you must rerun that command after every edit, because the copy does not
+track the repo.
+
+## Updating
+
+Symlink install:
+
+```bash
+cd ~/WebstormProjects/skillz && git pull && scripts/link-skills.sh
+```
+
+Plugin install:
+
+```bash
+claude plugin marketplace update skillz && claude plugin update agent-sdlc@skillz
+```
+
+## Uninstalling
+
+```bash
+cd ~/WebstormProjects/skillz && scripts/link-skills.sh --unlink
+```
+
+It removes only what it installed. Anything else in `~/.claude/skills/` is left alone,
+and it says so rather than deleting it.
+
+Plugin install:
+
+```bash
+claude plugin uninstall agent-sdlc@skillz
+```
+
+## Using it in a project
+
+Nothing to add to the project. The skills create what they need:
+
+| Path | Committed? | What |
+|---|---|---|
+| `docs/research/<ticket-id>.md` | yes | the research brief |
+| `docs/test-cases/<ticket-id>-<slug>.md` | yes | the plain-English test case |
+| `.sdlc/` | no | progress and run evidence |
+
+`/implement` adds `.sdlc/` to the project's `.gitignore` the first time it runs.
+
+Start a ticket:
+
+```bash
+/implement #123
+```
+
+Or a pasted ticket, or a path to a markdown file. It asks for what it needs.
 
 ## Documents
 
