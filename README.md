@@ -96,20 +96,25 @@ claude plugin marketplace add mattpocock/skills && claude plugin install mattpoc
 claude plugin list
 ```
 
-You want `agent-sdlc@skillz` marked enabled. Then type `/agent-sdlc:` in Claude Code and
-look for six skills.
+You want `agent-sdlc@skillz` marked enabled.
+
+**Then restart Claude Code.** A plugin install does not take effect in the session that
+ran it — the installer says "Restart to apply changes" and it means it. Skills installed
+this way stay unknown until you restart. This is different from the clone-and-symlink
+path below, which picks up new skills in a running session after a short rescan.
+
+After the restart, type `/agent-sdlc:` and look for six skills.
 
 `blind-e2e` will **not** appear. It is marked not user-invocable on purpose — only the
 other skills call it. Its absence is the install working, not failing.
-
-**If nothing appears, wait.** A newly installed skill registers after a short rescan, not
-immediately. The first call right after installing can say "Unknown skill".
 
 ### Updating
 
 ```bash
 claude plugin marketplace update skillz && claude plugin update agent-sdlc@skillz
 ```
+
+Restart Claude Code afterwards, same as for the install.
 
 **This only works if the version changed.** `claude plugin update` compares the version
 in `.claude-plugin/plugin.json`, not the commit. Push a change without bumping it and
@@ -145,7 +150,8 @@ cd ~/WebstormProjects/skillz && scripts/link-skills.sh
 ```
 
 That symlinks each skill into `~/.claude/skills/`. Edit the repo, the skill changes. No
-reinstall.
+reinstall and no restart — a new or edited skill registers after a short rescan. The
+first call right after a change can still say "Unknown skill"; wait and try again.
 
 You should see seven lines, each ending `OK`. The commands are then the plain
 `/implement`, `/research-ticket` and so on, with no `agent-sdlc:` prefix.
