@@ -111,6 +111,18 @@ immediately. The first call right after installing can say "Unknown skill".
 claude plugin marketplace update skillz && claude plugin update agent-sdlc@skillz
 ```
 
+**This only works if the version changed.** `claude plugin update` compares the version
+in `.claude-plugin/plugin.json`, not the commit. Push a change without bumping it and
+the update reports "already at the latest version" and pulls nothing.
+
+So every change that installed users should receive ends with:
+
+```bash
+scripts/release.sh 0.3.0
+```
+
+That bumps the version, commits, and pushes.
+
 ### Uninstalling
 
 ```bash
@@ -137,6 +149,9 @@ reinstall.
 
 You should see seven lines, each ending `OK`. The commands are then the plain
 `/implement`, `/research-ticket` and so on, with no `agent-sdlc:` prefix.
+
+Edits are live at once here, with no version bump. The version only matters for people
+installing the plugin.
 
 **Do not run both installs at once.** You would get every skill twice in the menu. Pick
 one:
