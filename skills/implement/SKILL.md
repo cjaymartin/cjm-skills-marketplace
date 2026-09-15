@@ -66,9 +66,21 @@ that you did. Run artifacts and progress are working files, not history.
 `docs/research/` and `docs/test-cases/` **are** committed. The test cases outlive the
 ticket.
 
+## Gate policy
+
+The default policy is **attended**: each gate below is a stop, and you wait.
+
+A caller may set the policy to **autonomous** when it invokes this skill. Under that
+policy you do not wait at a gate. You apply the caller's assumption protocol instead:
+decide, say the decision out loud, log it, and continue. `independent-implement` is the
+caller that does this.
+
+Autonomy applies only to the human gates. It never applies to a blind verdict. Red still
+has to FAIL, green still has to PASS, and BLOCKED is still neither.
+
 ## The five human gates
 
-Each is a stop. You wait. Not a prompt followed by proceeding.
+Each is a stop under the attended policy. You wait. Not a prompt followed by proceeding.
 
 1. **After research.** The agent reports the behavior was intended, or found a different
    bug from the one reported. Continue or not?

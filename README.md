@@ -18,7 +18,8 @@ person can hold several tickets at once. Five human decision points stay in the 
 | [`green-green-e2e`](skills/green-green-e2e/SKILL.md) | regression | Proves behavior that already works still works after a change. |
 | [`tdd-implement`](skills/tdd-implement/SKILL.md) | 04 + 05 build | Unit tests first, at seams you agreed to. Then the code. |
 | [`self-review`](skills/self-review/SKILL.md) | 07 self-review | Parallel reviewers across legitimacy, correctness, error handling, tests, security and style. |
-| [`implement`](skills/implement/SKILL.md) | 02 → 07 | Runs the whole chain. Resumable. |
+| [`implement`](skills/implement/SKILL.md) | 02 → 07 | Runs the whole chain. Stops at every human gate. Resumable. |
+| [`independent-implement`](skills/independent-implement/SKILL.md) | 02 → 07 | The same chain unattended. Guesses cheap answers, logs every one, stops only when a wrong guess would be expensive. |
 | `blind-e2e` | — | The engine. Not called directly. |
 
 Installed as a plugin they are `/agent-sdlc:implement` and so on. Installed from a clone
@@ -37,6 +38,9 @@ by symlink they are the plain `/implement`. See [Install it](#install-it).
 
 Progress is written to `.sdlc/<ticket-id>/state.md` after every step, so `implement`
 picks up where it stopped.
+
+To run the same chain without the stops, use `independent-implement`. See
+[Running it unattended](#running-it-unattended).
 
 ## Why "blind"
 
@@ -77,6 +81,34 @@ install, where plugin hooks do not run.
 The full 53 rules come from [SimpleEnglish](https://github.com/AminBlg/SimpleEnglish).
 [WRITING-STANDARD.md](WRITING-STANDARD.md) is the short form for when that skill is not
 installed.
+
+## Running it unattended
+
+`implement` stops at five human gates. `independent-implement` runs the same chain
+without you.
+
+The rule is rework cost, not importance. If a wrong guess costs under 20 minutes of agent
+work to undo, it guesses, says so out loud, logs it, and carries on. If it costs more, it
+stops and waits. This is ordinary agile practice: when the answer is not in the spec and
+nobody is available, either choice is usually fine as long as it is written down.
+
+Every guess lands in `.sdlc/<ticket-id>/assumptions.md` with the answer, the reason, the
+rework estimate, and the earliest step it affects. The run ends with that list, most
+expensive first:
+
+```
+| # | Question | Guessed | Rework if wrong | Re-runs from |
+|---|---|---|---|---|
+| A1 | Which date format for the export? | ISO 8601 | 5 min | implement |
+| A2 | Should an empty cart show zero or an error? | zero | 15 min | red |
+```
+
+Change one by replying `A2 should be an error`. The skill re-enters at the step that
+answer affects, runs forward from there, and re-checks every later assumption that rested
+on the old answer. It does not restart the chain.
+
+**Autonomy never touches evidence.** The blind verdicts are unchanged. Red still has to
+FAIL, green still has to PASS, and BLOCKED is still neither.
 
 ## Ticket sources
 
