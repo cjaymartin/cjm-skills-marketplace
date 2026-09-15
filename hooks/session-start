@@ -1,0 +1,46 @@
+#!/usr/bin/env bash
+# SessionStart hook for the agent-sdlc plugin.
+#
+# Injects the repository's writing standard into every session, so that everything the
+# skills produce — briefs, test cases, review findings, commit messages — is written in
+# Simplified Technical English without anyone having to ask.
+#
+# Fails silently. A broken writing standard must never break a session.
+
+set -uo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)" || exit 0
+PLUGIN_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)" || exit 0
+STANDARD="${PLUGIN_ROOT}/WRITING-STANDARD.md"
+
+[ -r "$STANDARD" ] || exit 0
+
+content="$(cat "$STANDARD" 2>/dev/null)" || exit 0
+[ -n "$content" ] || exit 0
+
+# Escape for embedding in a JSON string. Each substitution is one C-level pass.
+escape_for_json() {
+    local s="$1"
+    s="${s//\\/\\\\}"
+    s="${s//\"/\\\"}"
+    s="${s//$'\n'/\\n}"
+    s="${s//$'\r'/\\r}"
+    s="${s//$'\t'/\\t}"
+    printf '%s' "$s"
+}
+
+escaped="$(escape_for_json "$content")"
+
+session_context="<WRITING-STANDARD>\nThis session has the agent-sdlc skills installed. Everything you write follows the standard below — not only inside those skills, but in every reply, document, test case and commit message.\n\nIf a skill named 'simple-english' is available, call it with the Skill tool and follow it. It carries all 53 ASD-STE100 rules and the approved vocabulary. The text below is the short form.\n\n${escaped}\n</WRITING-STANDARD>"
+
+# Each platform reads a different field, and Claude Code reads more than one without
+# deduplicating, so emit exactly one.
+if [ -n "${CURSOR_PLUGIN_ROOT:-}" ]; then
+  printf '{\n  "additional_context": "%s"\n}\n' "$session_context"
+elif [ -n "${CLAUDE_PLUGIN_ROOT:-}" ] && [ -z "${COPILOT_CLI:-}" ]; then
+  printf '{\n  "hookSpecificOutput": {\n    "hookEventName": "SessionStart",\n    "additionalContext": "%s"\n  }\n}\n' "$session_context"
+else
+  printf '{\n  "additionalContext": "%s"\n}\n' "$session_context"
+fi
+
+exit 0

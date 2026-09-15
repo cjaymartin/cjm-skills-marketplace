@@ -77,3 +77,12 @@ This is the fifth and last human gate.
 
 They are reading for accuracy and clarity, and agents are long-winded. Keep the report
 to findings. No summary of what the change does — they can read the diff.
+
+## Writing standard
+
+Write everything this skill produces in Simplified Technical English: short sentences,
+active voice, one word for one meaning, the answer first, no jargon left unexplained.
+Keep paths, commands and numbers exact.
+
+A sentence that can be read two ways costs a round here. Call the `simple-english` skill
+if it is installed. Short form: [WRITING-STANDARD.md](https://github.com/cjaymartin/skillz/blob/main/WRITING-STANDARD.md)

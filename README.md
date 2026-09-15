@@ -53,6 +53,31 @@ that is not there.
 Test cases live in `docs/test-cases/` in the repo being worked on, and are committed.
 They outlive the ticket and become regression coverage.
 
+## The writing standard
+
+Everything these skills produce gets written in **Simplified Technical English**
+(ASD-STE100): short sentences, active voice, one word for one meaning, the answer first.
+
+This is not a style preference. A test case that reads two ways returns BLOCKED, and
+BLOCKED costs a whole round. A research brief that buries its finding under qualifiers
+gets skimmed, and the human gate it feeds gets rubber-stamped. Clear writing is what
+makes the gates work.
+
+**It applies automatically.** Installing this plugin adds a SessionStart hook that
+injects [WRITING-STANDARD.md](WRITING-STANDARD.md) into every session — not only inside
+the skills, but in every reply, document and commit message. Nobody has to remember to
+ask for it.
+
+The hook needs a fresh session before it fires. It fails silently: a missing or
+unreadable standard file never breaks a session.
+
+Each skill also carries the rule inline, so it still applies on the clone-and-symlink
+install, where plugin hooks do not run.
+
+The full 53 rules come from [SimpleEnglish](https://github.com/AminBlg/SimpleEnglish).
+[WRITING-STANDARD.md](WRITING-STANDARD.md) is the short form for when that skill is not
+installed.
+
 ## Ticket sources
 
 GitHub issues first, but the reader is swappable. One markdown file per source in
@@ -77,10 +102,7 @@ That is the whole install. Works over SSH against the private repo, no extra set
 The skills then answer to `/agent-sdlc:implement`, `/agent-sdlc:research-ticket`, and so
 on. Tab completion after `/agent-sdlc:` lists them.
 
-### Install the two prerequisites too
-
-`tdd-implement` and `self-review` call into these rather than restating them. Without
-them those two skills still run, but they lose the method they delegate to.
+### Install the three prerequisites too
 
 ```bash
 claude plugin marketplace add anthropics/claude-plugins-official && claude plugin install superpowers@claude-plugins-official
@@ -90,6 +112,18 @@ claude plugin marketplace add anthropics/claude-plugins-official && claude plugi
 claude plugin marketplace add mattpocock/skills && claude plugin install mattpocock-skills@mattpocock
 ```
 
+```bash
+claude plugin marketplace add AminBlg/SimpleEnglish && claude plugin install simple-english@simple-english
+```
+
+| Prerequisite | Why |
+|---|---|
+| [superpowers](https://github.com/obra/superpowers) | `tdd-implement` delegates the red-green loop discipline to it |
+| [mattpocock-skills](https://github.com/mattpocock/skills) | `tdd-implement` and `self-review` delegate test design and the two-axis review to it |
+| [SimpleEnglish](https://github.com/AminBlg/SimpleEnglish) | carries all 53 ASD-STE100 rules, the approved vocabulary, and a word-choice linter |
+
+Without them those skills still run. They just lose the method they delegate to.
+
 ### Check it worked
 
 ```bash
@@ -98,12 +132,15 @@ claude plugin list
 
 You want `agent-sdlc@skillz` marked enabled.
 
-**Then restart Claude Code.** A plugin install does not take effect in the session that
-ran it — the installer says "Restart to apply changes" and it means it. Skills installed
-this way stay unknown until you restart. This is different from the clone-and-symlink
-path below, which picks up new skills in a running session after a short rescan.
+Then type `/agent-sdlc:` and look for six skills.
 
-After the restart, type `/agent-sdlc:` and look for six skills.
+**Give it a minute.** A newly installed plugin registers after a rescan, not
+immediately, and the installer's "Restart to apply changes" overstates it. A call made
+too early returns "Unknown skill". Waiting works; restarting also works and is faster to
+be sure of.
+
+**Hooks are the exception.** The writing standard below is injected by a SessionStart
+hook, and a hook really does need a fresh session before it fires.
 
 `blind-e2e` will **not** appear. It is marked not user-invocable on purpose — only the
 other skills call it. Its absence is the install working, not failing.

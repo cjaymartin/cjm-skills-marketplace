@@ -105,3 +105,12 @@ REASON: <one sentence; required for FAIL and BLOCKED, omit the line for PASS>
 Keep `STEPS OBSERVED` to what happened. "Clicked Save" is a step. "Clicked Save, which
 should have persisted the record" is not — the second half is a claim about intent you
 have no basis for.
+
+## Writing standard
+
+Write everything this skill produces in Simplified Technical English: short sentences,
+active voice, one word for one meaning, the answer first, no jargon left unexplained.
+Keep paths, commands and numbers exact.
+
+A sentence that can be read two ways costs a round here. Call the `simple-english` skill
+if it is installed. Short form: [WRITING-STANDARD.md](https://github.com/cjaymartin/skillz/blob/main/WRITING-STANDARD.md)
