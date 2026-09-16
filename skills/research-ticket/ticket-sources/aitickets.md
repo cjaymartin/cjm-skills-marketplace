@@ -5,7 +5,7 @@ which the skill links directly.
 
 ## What this will be
 
-A reader for the ticketing system under development at `~/WebstormProjects/aitickets`.
+A reader for a private ticketing system.
 
 ## The contract any adapter must satisfy
 

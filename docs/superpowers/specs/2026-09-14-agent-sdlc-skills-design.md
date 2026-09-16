@@ -2,7 +2,7 @@
 
 Date: 2026-09-14
 Status: **built** on 2026-09-14. All seven skills exist and are installed.
-Repo: `skillz` (private, GitHub, `cjaymartin/skillz`)
+Repo: `cjm-skills-marketplace` (GitHub, `cjaymartin/cjm-skills-marketplace`)
 Author: C. Jay Martin
 
 ## Contents
@@ -24,7 +24,7 @@ Author: C. Jay Martin
 
 ## Goal
 
-Fill steps 02 through 07 of the ticket lifecycle — the developer's own block — with skills that chain into one command. The source is the "Marketplace Skills: Mapping What They Fill" deck.
+Fill steps 02 through 07 of the ticket lifecycle — the developer's own block — with skills that chain into one command. The eleven steps below are the lifecycle this repo was built against.
 
 The eleven steps:
 
@@ -46,7 +46,7 @@ The point of the chain is not full automation. It is to compress the typing **be
 
 ## Scope
 
-Seven skills plus supporting reference files. Generic: no Portico, no Jira, no product names. They must work in any repo on this machine.
+Seven skills plus supporting reference files. Generic: no employer names, no Jira, no product names. They must work in any repo on this machine.
 
 Prerequisites, already installed:
 
@@ -205,7 +205,7 @@ Axes:
 
 The full checklist lives in `review-checklist.md` next to the SKILL.md.
 
-**Composition:** invokes `mattpocock-skills:code-review` for its two-axis Standards and Spec pass plus the Fowler smell baseline. `self-review` adds the Legitimacy axis, which is the one the deck calls out and which nothing else covers.
+**Composition:** invokes `mattpocock-skills:code-review` for its two-axis Standards and Spec pass plus the Fowler smell baseline. `self-review` adds the Legitimacy axis, which nothing else covers.
 
 ---
 
@@ -245,7 +245,7 @@ Inside the repo being worked on, not this one:
 | `.sdlc/<ticket-id>/state.md` | no | orchestrator progress |
 | `.sdlc/runs/<ticket-id>/*.md` | no | blind run verdicts and evidence |
 
-Test cases are committed on purpose. They are the by-product the deck wants feeding a regression suite later.
+Test cases are committed on purpose. They are the by-product that feeds a regression suite later.
 
 `implement` adds `.sdlc/` to the target repo's `.gitignore` if it is not already there.
 
@@ -327,7 +327,7 @@ Whatever the case needs. Usually a browser: Playwright MCP is installed on this 
 
 ## Human decision points
 
-Five, taken straight from the deck:
+Five:
 
 1. **After research.** The agent says the behavior was intended, or found a different bug than the one reported. Continue or not?
 2. **Before replicating.** The ticket is missing institutional knowledge. The human supplies what makes the failure reproducible.
@@ -362,7 +362,7 @@ An adapter is one markdown file in `research-ticket/ticket-sources/`. The skill 
 | `github-issue.md` | `#123`, `owner/repo#123`, a github.com issue URL | `gh issue view` for body, comments, labels, linked PRs |
 | `markdown-file.md` | a path ending `.md` | read the file |
 | `plain-text.md` | anything else | treat the argument as the ticket body; ask for missing pieces |
-| `aitickets.md` | reserved | stub for the user's own ticketing system at `~/WebstormProjects/aitickets`. Records the interface each adapter must provide and is marked NOT IMPLEMENTED. |
+| `aitickets.md` | reserved | stub for a private ticketing system. Records the interface each adapter must provide and is marked NOT IMPLEMENTED. |
 
 Each adapter must produce the same four things: id, title, body, and any attached discussion. Adding a source means adding one file, no skill edits.
 
@@ -373,7 +373,7 @@ Each adapter must produce the same four things: id, title, body, and any attache
 The repo is shaped as a Claude Code plugin **and** used as a symlink source. Both work off the same files.
 
 ```
-skillz/
+cjm-skills-marketplace/
   .claude-plugin/
     marketplace.json
     plugin.json
@@ -402,7 +402,7 @@ Each skill is linked **the moment it is written**, not at the end. After each li
 
 Symlinked skills have open bugs against listing and validation (see the research notes). If listing breaks, the fallback is a copy-sync mode in the same script, chosen with a flag.
 
-**Anywhere else:** `claude plugin marketplace add <repo>` then `claude plugin install agent-sdlc@skillz`. Skills then answer to `/skillz:...`.
+**Anywhere else:** `claude plugin marketplace add <repo>` then `claude plugin install agent-sdlc@cjm-skills-marketplace`. Skills then answer to `/agent-sdlc:...`.
 
 ---
 
@@ -440,7 +440,7 @@ One further observation: a skill created mid-session is not invocable at once. A
 
 ## Out of scope
 
-- **Usage telemetry.** The deck wants in-skill measurement so Portico can report adoption. Not needed for one machine. The skills leave a clean artifact trail (`docs/research/`, `docs/test-cases/`, `.sdlc/`), which is enough to add counting later without redesign.
-- **Steps 08 to 11.** Code review by another human, QA, regression suites, release. The deck names 08 and 09 as the open bottlenecks. Nothing here claims to solve them.
-- **Epic-level skills.** The deck's `retheme-*` pipeline is a second, larger project that calls this one. Not built here.
+- **Usage telemetry.** In-skill measurement, so a team can report adoption. Not needed for one machine. The skills leave a clean artifact trail (`docs/research/`, `docs/test-cases/`, `.sdlc/`), which is enough to add counting later without redesign.
+- **Steps 08 to 11.** Code review by another human, QA, regression suites, release. Steps 08 and 09 are the open bottlenecks. Nothing here claims to solve them.
+- **Epic-level skills.** An epic-level pipeline that calls this one is a second, larger project. Not built here.
 - **XRay or any test-management integration.** Test cases land as markdown in the repo. Exporting them is a later, separate piece.

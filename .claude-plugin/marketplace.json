@@ -1,15 +1,21 @@
 {
-  "name": "skillz",
+  "name": "cjm-skills-marketplace",
   "description": "Agent-driven SDLC skills: research, blind end-to-end proof, test-first implementation, and self-review, chained by one command.",
   "owner": {
     "name": "C. Jay Martin",
-    "email": "cjay.martin@gmail.com"
+    "url": "https://github.com/cjaymartin"
   },
   "plugins": [
     {
       "name": "agent-sdlc",
       "source": "./",
-      "description": "An agent-driven SDLC: research a ticket, prove the failure blind, build it test-first, prove the fix blind, review your own work."
+      "description": "An agent-driven SDLC: research a ticket, prove the failure blind, build it test-first, prove the fix blind, review your own work.",
+      "version": "0.5.0",
+      "license": "MIT",
+      "homepage": "https://github.com/cjaymartin/cjm-skills-marketplace",
+      "author": {
+        "name": "C. Jay Martin"
+      }
     }
   ]
 }

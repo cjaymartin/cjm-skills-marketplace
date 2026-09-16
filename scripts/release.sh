@@ -30,23 +30,34 @@ if [ "$OLD" = "$NEW" ]; then
   exit 2
 fi
 
-python3 - "$MANIFEST" "$NEW" <<'PY'
+# Both manifests carry a version. They must not drift: the plugin entry in
+# marketplace.json is what users see in the plugin list.
+python3 - "$REPO_ROOT" "$NEW" <<'BUMP'
 import json, sys
-path, new = sys.argv[1], sys.argv[2]
-with open(path) as f:
-    d = json.load(f)
-d["version"] = new
-with open(path, "w") as f:
-    json.dump(d, f, indent=2)
-    f.write("\n")
-PY
+root, new = sys.argv[1], sys.argv[2]
+
+def write(path, mutate):
+    with open(path) as f:
+        d = json.load(f)
+    mutate(d)
+    with open(path, "w") as f:
+        json.dump(d, f, indent=2)
+        f.write("\n")
+
+def set_plugin_versions(d):
+    for e in d.get("plugins", []):
+        e["version"] = new
+
+write(root + "/.claude-plugin/plugin.json", lambda d: d.__setitem__("version", new))
+write(root + "/.claude-plugin/marketplace.json", set_plugin_versions)
+BUMP
 
 cd "$REPO_ROOT"
-git add .claude-plugin/plugin.json
+git add .claude-plugin/plugin.json .claude-plugin/marketplace.json
 git commit -m "Release $NEW"
 git push
 
 echo
 echo "released $OLD -> $NEW"
 echo "installed users now get it with:"
-echo "  claude plugin marketplace update skillz && claude plugin update agent-sdlc@skillz"
+echo "  claude plugin marketplace update cjm-skills-marketplace && claude plugin update agent-sdlc@cjm-skills-marketplace"

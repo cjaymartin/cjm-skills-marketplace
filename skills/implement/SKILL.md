@@ -124,4 +124,4 @@ active voice, one word for one meaning, the answer first, no jargon left unexpla
 Keep paths, commands and numbers exact.
 
 A sentence that can be read two ways costs a round here. Call the `simple-english` skill
-if it is installed. Short form: [WRITING-STANDARD.md](https://github.com/cjaymartin/skillz/blob/main/WRITING-STANDARD.md)
+if it is installed. Short form: [WRITING-STANDARD.md](https://github.com/cjaymartin/cjm-skills-marketplace/blob/main/WRITING-STANDARD.md)

@@ -1,4 +1,4 @@
-# skillz
+# cjm-skills-marketplace
 
 An agent-driven SDLC as Claude Code skills.
 
@@ -122,11 +122,11 @@ means adding one file.
 Two commands.
 
 ```bash
-claude plugin marketplace add cjaymartin/skillz
+claude plugin marketplace add cjaymartin/cjm-skills-marketplace
 ```
 
 ```bash
-claude plugin install agent-sdlc@skillz
+claude plugin install agent-sdlc@cjm-skills-marketplace
 ```
 
 That is the whole install. Works over SSH against the private repo, no extra setup.
@@ -176,7 +176,7 @@ Without them those skills still run. They just lose the method they delegate to.
 claude plugin list
 ```
 
-You want `agent-sdlc@skillz` marked enabled.
+You want `agent-sdlc@cjm-skills-marketplace` marked enabled.
 
 Then type `/agent-sdlc:` and look for six skills.
 
@@ -194,7 +194,7 @@ other skills call it. Its absence is the install working, not failing.
 ### Updating
 
 ```bash
-claude plugin marketplace update skillz && claude plugin update agent-sdlc@skillz
+claude plugin marketplace update cjm-skills-marketplace && claude plugin update agent-sdlc@cjm-skills-marketplace
 ```
 
 Restart Claude Code afterwards, same as for the install.
@@ -214,7 +214,7 @@ That bumps the version, commits, and pushes.
 ### Uninstalling
 
 ```bash
-claude plugin uninstall agent-sdlc@skillz
+claude plugin uninstall agent-sdlc@cjm-skills-marketplace
 ```
 
 ## Working on the skills themselves
@@ -225,11 +225,11 @@ is pointless — the next update overwrites it.
 To edit the skills and have your edits live at once, install from a clone instead:
 
 ```bash
-git clone git@github.com:cjaymartin/skillz.git ~/WebstormProjects/skillz
+git clone git@github.com:cjaymartin/cjm-skills-marketplace.git ~/src/cjm-skills-marketplace
 ```
 
 ```bash
-cd ~/WebstormProjects/skillz && scripts/link-skills.sh
+cd ~/src/cjm-skills-marketplace && scripts/link-skills.sh
 ```
 
 That symlinks each skill into `~/.claude/skills/`. Edit the repo, the skill changes. No
@@ -250,14 +250,14 @@ scripts/link-skills.sh --unlink     # drop the symlinks, keep the plugin
 ```
 
 ```bash
-claude plugin uninstall agent-sdlc@skillz    # drop the plugin, keep the symlinks
+claude plugin uninstall agent-sdlc@cjm-skills-marketplace    # drop the plugin, keep the symlinks
 ```
 
 If a symlinked skill never appears in the menu, symlink discovery has a known bug in
 some Claude Code versions. Reinstall in copy mode and rerun it after every edit:
 
 ```bash
-cd ~/WebstormProjects/skillz && scripts/link-skills.sh --copy
+cd ~/src/cjm-skills-marketplace && scripts/link-skills.sh --copy
 ```
 
 ## Using it in a project

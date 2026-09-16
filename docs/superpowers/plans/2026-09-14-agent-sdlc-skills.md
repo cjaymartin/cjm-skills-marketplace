@@ -176,10 +176,9 @@ Everything after this task gets linked by this script, so it comes second.
 ```bash
 cat > .claude-plugin/marketplace.json <<'EOF'
 {
-  "name": "skillz",
+  "name": "cjm-skills-marketplace",
   "owner": {
-    "name": "C. Jay Martin",
-    "email": "cjay.martin@gmail.com"
+    "name": "C. Jay Martin"
   },
   "plugins": [
     {
@@ -524,7 +523,7 @@ Sets id to `gh-<number>`. Says to also check linked pull requests with `gh issue
 
 `plain-text.md` — the fallback. Treats the whole argument as the ticket body. Sets id to a slug the human confirms. Says explicitly to ask the human for a title and an id rather than inventing one.
 
-`aitickets.md` — a stub. Marked **NOT IMPLEMENTED** in its first line. Records the id, title, body, discussion contract that any adapter must satisfy, and names `~/WebstormProjects/aitickets` as the intended source. Says to fall back to `plain-text.md` until it is built.
+`aitickets.md` — a stub. Marked **NOT IMPLEMENTED** in its first line. Records the id, title, body, discussion contract that any adapter must satisfy, and names a private ticketing system as the intended source. Says to fall back to `plain-text.md` until it is built.
 
 - [ ] **Step 2: Write the skill frontmatter**
 
