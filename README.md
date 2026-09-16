@@ -134,7 +134,7 @@ That is the whole install. Works over SSH against the private repo, no extra set
 The skills then answer to `/agent-sdlc:implement`, `/agent-sdlc:research-ticket`, and so
 on. Tab completion after `/agent-sdlc:` lists them.
 
-### Install the three prerequisites too
+### Install the four prerequisites too
 
 ```bash
 claude plugin marketplace add anthropics/claude-plugins-official && claude plugin install superpowers@claude-plugins-official
@@ -148,11 +148,25 @@ claude plugin marketplace add mattpocock/skills && claude plugin install mattpoc
 claude plugin marketplace add AminBlg/SimpleEnglish && claude plugin install simple-english@simple-english
 ```
 
+ponytail needs two separate commands. Its own README says so.
+
+```bash
+claude plugin marketplace add DietrichGebert/ponytail
+```
+
+```bash
+claude plugin install ponytail@ponytail
+```
+
 | Prerequisite | Why |
 |---|---|
 | [superpowers](https://github.com/obra/superpowers) | `tdd-implement` delegates the red-green loop discipline to it |
 | [mattpocock-skills](https://github.com/mattpocock/skills) | `tdd-implement` and `self-review` delegate test design and the two-axis review to it |
 | [SimpleEnglish](https://github.com/AminBlg/SimpleEnglish) | carries all 53 ASD-STE100 rules, the approved vocabulary, and a word-choice linter |
+| [ponytail](https://github.com/dietrichgebert/ponytail) | `tdd-implement` delegates "write the least code that passes" to it. It activates itself, so nothing here has to inject it |
+
+ponytail runs two Node.js lifecycle hooks, so `node` must be on the non-interactive
+shell's PATH. Without it the skills still work and the always-on activation stays quiet.
 
 Without them those skills still run. They just lose the method they delegate to.
 

@@ -51,19 +51,39 @@ understood, and they go insensitive to the changes that matter.
 
 Each test is a tracer bullet: it responds to what the last slice taught you.
 
-## 5. Run checks every slice
+## 5. Write the least code that passes
+
+Before you write the implementation for a slice, walk the ladder:
+
+1. Does this need to exist at all?
+2. Is it already in this codebase?
+3. Is it in the standard library?
+4. Is it a native platform feature?
+5. Is it in a dependency already installed here?
+6. Can it be one line?
+
+Only then write new code, and write only what the failing test demands.
+
+Call the `ponytail:ponytail` skill if it is installed. It carries the full ladder and its
+intensity levels.
+
+**Minimal never means unsafe.** Input validation, error handling, authorisation and
+escaping are not abstraction, and the ladder does not remove them. If a shorter version
+drops a guard, it is not shorter, it is wrong.
+
+## 6. Run checks every slice
 
 - Typecheck, every slice.
 - The test files you touched, every slice.
 - The full suite once, at the end.
 
-## 6. A pre-existing failure is not yours to fix silently
+## 7. A pre-existing failure is not yours to fix silently
 
 If the full suite fails for reasons unrelated to this ticket, report it as pre-existing
 and ask whether to proceed. Do not fix it quietly — an unrelated fix inside this
 ticket's diff makes the change hard to review and hard to revert.
 
-## 7. Two reasonable designs means stop
+## 8. Two reasonable designs means stop
 
 When two approaches are both defensible, present both with the trade-off and wait. This
 is human gate three.
@@ -74,7 +94,7 @@ survives every gate, because every gate tests the design you chose against itsel
 Also stop when you notice you are on the third attempt at the same thing by a different
 route. That is the same gate arriving late.
 
-## 8. When called back after a failed green gate
+## 9. When called back after a failed green gate
 
 `red-green-e2e green` returned FAIL and handed you the verdict block.
 
