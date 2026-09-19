@@ -48,12 +48,15 @@ Its content:
 
 ## How to run it
 
-1. Follow the **Setup** section exactly. Run only the commands it names.
+1. Follow the **Setup** section exactly, from the root of the git repository that holds
+   the test case file. Run only the commands it names.
 2. Follow the **Steps** in order, one at a time. Each step is something a person could
    do. Do exactly what it says, nothing extra.
 3. After the last step, look for what the **Expected** section describes.
 4. Capture evidence as you go: a screenshot at each meaningful step for a browser run,
    the command and its output for a shell run.
+5. If the case has a **Cleanup** section, run it. Do this for every verdict, BLOCKED
+   and FAIL included.
 
 If a step is ambiguous, do not guess which reading was meant. That is a BLOCKED, not a
 coin flip.

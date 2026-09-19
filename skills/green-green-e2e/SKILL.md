@@ -3,6 +3,7 @@ name: green-green-e2e
 description: Guards against regressions by running the same plain-English test cases through a source-blind agent before and after a change, requiring a pass both times. Use for refactors, rethemes, dependency bumps, framework migrations, or any change that must not alter existing behavior.
 arguments: mode change_id
 argument-hint: [before|after] [change-id]
+allowed-tools: Bash(${CLAUDE_SKILL_DIR}/../implement/scripts/sdlc.sh *)
 ---
 
 # Green-green regression guard
@@ -26,16 +27,30 @@ Here the first run must pass. Picking the wrong one inverts every gate.
 
 Mode: `$mode`. Change: `$change_id`.
 
+`SDLC` below means `${CLAUDE_SKILL_DIR}/../implement/scripts/sdlc.sh`. After each blind
+run, pass its output to the script unchanged:
+
+```bash
+SDLC verdict <change-id> <before|after> <absolute path to the case> <<'VERDICT'
+<the blind output, exactly as returned>
+VERDICT
+```
+
+It saves the output to `.sdlc/runs/<change-id>/`, records the case hash in before mode,
+and checks it in after mode. Exit 0 means PASS, 1 means FAIL, 2 means BLOCKED, 3 means
+the output was malformed, and 4 means the case changed since before mode.
+
 ## Before mode — establish the guard
 
 1. **Pick or write the cases.** Cover the behavior most likely to break and most costly
    if it does. Write them to `docs/test-cases/<change-id>-<slug>.md`, following
-   [the test case format](../red-green-e2e/test-case-format.md).
-2. **Hash each one** into `.sdlc/<change-id>/state.md`.
-3. **Run one fork per case.** Call the Skill tool with `blind-e2e` once per case, each
+   [the test case format](../red-green-e2e/test-case-format.md). A case that starts a
+   server uses `docs/test-cases/lib/serve.sh`. If it is missing, copy it from
+   `${CLAUDE_SKILL_DIR}/../serve/scripts/serve.sh`.
+2. **Run one fork per case.** Call the Skill tool with `blind-e2e` once per case, each
    with its own path.
-4. **Gate every case on PASS.**
-5. **Persist each verdict** to `.sdlc/runs/<change-id>/before-<slug>-<timestamp>.md`.
+3. **Save each verdict** with `SDLC verdict <change-id> before <case path>`. Every case
+   gates on PASS.
 
 ## A FAIL in before mode is not a regression
 
@@ -51,10 +66,11 @@ own ticket.
 
 ## After mode — prove nothing broke
 
-1. **Same files, unedited.** Re-hash and compare against what before mode recorded.
+1. **Same files, unedited.**
 2. **One fork per case**, same calls.
-3. **Gate every case on PASS.**
-4. **Persist each verdict** to `.sdlc/runs/<change-id>/after-<slug>-<timestamp>.md`.
+3. **Save each verdict** with `SDLC verdict <change-id> after <case path>`. Every case
+   gates on PASS. Exit 4 means the case changed since before mode, so that case proves
+   nothing.
 
 ## One fork per case, always
 

@@ -3,6 +3,7 @@ name: self-review
 description: Reviews your own change before a human sees it, across legitimacy, correctness, error handling, tests, security and style, using parallel reviewers with clean context. Use when a fix is complete and verified, before opening a pull request.
 arguments: ticket_id
 argument-hint: [ticket-id]
+allowed-tools: Bash(${CLAUDE_SKILL_DIR}/../implement/scripts/sdlc.sh *)
 ---
 
 # Review your own work
@@ -18,7 +19,12 @@ Call the Skill tool with `mattpocock-skills:code-review`. It runs a Standards pa
 Spec pass in parallel and carries a code-smell baseline.
 
 Give it the fixed point for the diff, and give it `docs/research/<ticket-id>.md` as the
-spec source. That brief is what the change was supposed to do.
+spec source. That brief is what the change was supposed to do. The fixed point is the
+base branch:
+
+```bash
+${CLAUDE_SKILL_DIR}/../implement/scripts/sdlc.sh base
+```
 
 ## 2. Add the legitimacy axis
 
@@ -36,8 +42,15 @@ Full questions: [review-checklist.md](review-checklist.md).
 
 ## 3. Run the remaining axes as parallel reviewers
 
-One reviewer per axis, each with clean context, each given **only** its own section of
-[review-checklist.md](review-checklist.md) plus the diff:
+Build one packet per axis. Each packet holds that axis's section of
+[review-checklist.md](review-checklist.md) and the full diff:
+
+```bash
+${CLAUDE_SKILL_DIR}/../implement/scripts/sdlc.sh review <ticket-id>
+```
+
+It prints one `packet=` path per axis. Start one reviewer per packet, all at once, each
+with clean context:
 
 | Reviewer | Section |
 |---|---|
@@ -50,7 +63,8 @@ One reviewer per axis, each with clean context, each given **only** its own sect
 Separate context per reviewer is the point. A reviewer that has read the other axes'
 findings starts agreeing with them instead of looking.
 
-Paste each section into its reviewer's prompt. They cannot read this repository.
+Tell each reviewer: "Read `<packet path>` and review the diff in it for that axis only.
+Read nothing else." Give the path, not the content.
 
 ## 4. Do not rerank across axes
 

@@ -22,6 +22,25 @@ person can hold several tickets at once. Five human decision points stay in the 
 | [`independent-implement`](skills/independent-implement/SKILL.md) | 02 → 07 | The same chain unattended. Guesses cheap answers, logs every one, stops only when a wrong guess would be expensive. |
 | `blind-e2e` | — | The engine. Not called directly. |
 
+### Everyday skills
+
+These came out of a search of 657 past chats for work the agent kept doing by hand.
+Each one is a script, so it costs few tokens and does the same thing every time.
+
+| Skill | What it does |
+|---|---|
+| [`serve`](skills/serve/SKILL.md) | Starts a server on a free port, waits until it answers, and stops only what it started. Replaces nohup, curl loops, and kill by port. |
+| [`test-summary`](skills/test-summary/SKILL.md) | Runs tests once, prints the totals and the failures, and keeps the full log. No second run because `tail` cut the error off. |
+| [`pr-status`](skills/pr-status/SKILL.md) | Says whether a PR can merge, the result of each check, and why CI failed. `--wait` replaces sleep loops. |
+| [`attach-images`](skills/attach-images/SKILL.md) | Puts screenshots on a side branch with no browser, and prints links for a PR or issue. |
+| [`watch-origin`](skills/watch-origin/SKILL.md) | Keeps a checkout and its dev server level with the remote branch. You call it by name. |
+| [`skillhound`](skills/skillhound/SKILL.md) | Runs that search again: finds repeated work in your chats that belongs in a skill or a script. You call it by name. |
+
+The SDLC skills share one script, [`skills/implement/scripts/sdlc.sh`](skills/implement/scripts/sdlc.sh).
+It saves and gates blind verdicts, checks test-case hashes, makes base-branch checkouts
+for red runs, prints resume status, and builds self-review packets.
+`research-ticket` reads tickets with [`fetch-ticket.sh`](skills/research-ticket/scripts/fetch-ticket.sh).
+
 Installed as a plugin they are `/agent-sdlc:implement` and so on. Installed from a clone
 by symlink they are the plain `/implement`. See [Install it](#install-it).
 
@@ -112,10 +131,10 @@ FAIL, green still has to PASS, and BLOCKED is still neither.
 
 ## Ticket sources
 
-GitHub issues first, but the reader is swappable. One markdown file per source in
-[`skills/research-ticket/ticket-sources/`](skills/research-ticket/ticket-sources):
-GitHub issue, markdown file, plain text, and a stub for a future system. Adding a source
-means adding one file.
+[`fetch-ticket.sh`](skills/research-ticket/scripts/fetch-ticket.sh) reads GitHub issues
+and markdown files. Plain text falls back to
+[`plain-text.md`](skills/research-ticket/ticket-sources/plain-text.md). Adding a source
+means adding one branch to the script.
 
 ## Install it
 
@@ -178,7 +197,7 @@ claude plugin list
 
 You want `agent-sdlc@cjm-skills-marketplace` marked enabled.
 
-Then type `/agent-sdlc:` and look for six skills.
+Then type `/agent-sdlc:` and look for thirteen skills.
 
 **Give it a minute.** A newly installed plugin registers after a rescan, not
 immediately, and the installer's "Restart to apply changes" overstates it. A call made
@@ -236,7 +255,7 @@ That symlinks each skill into `~/.claude/skills/`. Edit the repo, the skill chan
 reinstall and no restart — a new or edited skill registers after a short rescan. The
 first call right after a change can still say "Unknown skill"; wait and try again.
 
-You should see seven lines, each ending `OK`. The commands are then the plain
+You should see fourteen lines, each ending `OK`. The commands are then the plain
 `/implement`, `/research-ticket` and so on, with no `agent-sdlc:` prefix.
 
 Edits are live at once here, with no version bump. The version only matters for people
@@ -288,6 +307,10 @@ Or a pasted ticket, or a path to a markdown file. It asks for what it needs.
 - [Probe results](docs/research/2026-09-14-mechanism-probes.md) — what was verified on this machine, and what failed
 
 ## Checks
+
+`scripts/test-scripts.sh` runs every script the skills call against throwaway repos. Run
+it after any edit under `skills/*/scripts/`. `pr-status.sh` is the one it skips, because
+it needs a real pull request.
 
 `scripts/probes/` holds the probe skills that verify Claude Code's fork, symlink,
 argument and tool-restriction behavior, plus three trial cases that verify `blind-e2e`

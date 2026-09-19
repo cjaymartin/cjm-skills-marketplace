@@ -4,6 +4,7 @@ description: Runs a ticket end to end through research, blind failure replicatio
 disable-model-invocation: true
 arguments: ticket_ref
 argument-hint: [ticket-ref]
+allowed-tools: Bash(${CLAUDE_SKILL_DIR}/scripts/sdlc.sh *)
 ---
 
 # Work a ticket end to end
@@ -18,7 +19,15 @@ person can hold several tickets at once. Every decision stays with the human.
 
 ## Resume before you start
 
-Read `.sdlc/<ticket-id>/state.md` if it exists.
+If `docs/research/<ticket-id>.md` exists, run:
+
+```bash
+${CLAUDE_SKILL_DIR}/scripts/sdlc.sh status <ticket-id>
+```
+
+It prints the branch, its distance from the base, and the uncommitted files. It also
+prints the state file, the last verdict per mode, and the hash check for each test case.
+Last come leftover trees, running servers, and the open PR.
 
 Report which step it stopped at and why, then continue from there. Never restart a step
 that finished — the artifacts it produced are still on disk and still valid.
@@ -57,6 +66,8 @@ one line per step, each finished line carrying the artifact it produced:
 
 Writing it after every step is what makes running several tickets at once survivable.
 Written at the end, it is a log. Written as you go, it is a resume point.
+
+`sdlc.sh verdict` fills in the red and green lines itself. Write the other lines.
 
 ## Gitignore
 
