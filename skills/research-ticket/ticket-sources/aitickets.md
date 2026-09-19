@@ -1,7 +1,8 @@
 # Ticket source: aitickets — NOT IMPLEMENTED
 
 This adapter is a placeholder. Until it is built, fall back to the plain-text source,
-which the skill links directly.
+which the skill links directly. To build it, add a branch to `scripts/fetch-ticket.sh`
+that prints the same fields as the GitHub branch.
 
 ## What this will be
 

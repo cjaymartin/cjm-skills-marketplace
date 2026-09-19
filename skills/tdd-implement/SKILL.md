@@ -3,6 +3,7 @@ name: tdd-implement
 description: Builds a ticket's fix test-first, one vertical slice at a time, at seams the human agreed to in advance. Use after a failure has been replicated and before any end-to-end verification of the fix.
 arguments: ticket_id
 argument-hint: [ticket-id]
+allowed-tools: Bash(${CLAUDE_SKILL_DIR}/../test-summary/scripts/testsum.sh *)
 ---
 
 # Build the fix, test first
@@ -76,6 +77,13 @@ drops a guard, it is not shorter, it is wrong.
 - Typecheck, every slice.
 - The test files you touched, every slice.
 - The full suite once, at the end.
+
+Run each check through the test-summary script. It prints the totals and the failures,
+and it keeps the full log, so a cut-off failure never costs a second run:
+
+```bash
+${CLAUDE_SKILL_DIR}/../test-summary/scripts/testsum.sh -- <the check command>
+```
 
 ## 7. A pre-existing failure is not yours to fix silently
 

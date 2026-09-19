@@ -4,6 +4,7 @@
 - Where test cases live
 - The template
 - The rules
+- Starting a server
 - Why Setup completeness matters
 - Worked example: a web application
 - Worked example: a command-line tool
@@ -32,9 +33,14 @@ Any account to sign in with. Everything needed to reach the starting screen.
 
 ## Expected
 What should be seen after the last step. One observable outcome.
+
+## Cleanup
+Commands that stop what Setup started. Optional.
 ```
 
-All three sections are required. A case missing any of them returns BLOCKED.
+Setup, Steps and Expected are required. A case missing any of them returns BLOCKED.
+Setup runs from the root of the git repository that holds the case file. That is how
+the same case runs in a checkout of the base branch and in the working tree.
 
 ## The rules
 
@@ -54,6 +60,34 @@ A case with three Expected outcomes cannot return a clean verdict.
 **Steps are actions, not intentions.** "Click Save" is a step. "Save the record so it
 persists" is two things: an action and a claim about what should happen. The claim
 belongs in Expected, if anywhere.
+
+## Starting a server
+
+Start every server with the shared script in `docs/test-cases/lib/serve.sh`:
+
+```
+bash docs/test-cases/lib/serve.sh start --name T-12-cart-api --ready /health -- node dist/main.js
+```
+
+It picks a free port, waits until the server answers, and prints one line with the
+port and URL: `OK name=T-12-cart-api port=23817 ... url=http://localhost:23817`. The
+Steps then say "open the URL from the OK line". Cleanup stops it by name:
+`bash docs/test-cases/lib/serve.sh stop T-12-cart-api`.
+
+Name each server after the case file. The implementing agent and other cases can run
+servers in the same checkout at the same time. A unique name keeps a start from
+colliding with theirs, and a stop by name leaves theirs running.
+
+This replaces what cost the most rounds in past runs: a fixed port that someone else
+held, a hand-written loop that polled for health, and a kill by port that stopped
+another agent's server. A blind runner refuses some of those shell forms, and each
+refusal is a BLOCKED.
+
+- Never name a fixed port. Other agents and the user run servers on this machine.
+- One server needs another's port? Pass it through the environment:
+  `API_URL=http://localhost:$(bash docs/test-cases/lib/serve.sh port T-12-cart-api) bash docs/test-cases/lib/serve.sh start --name T-12-cart-web -- npx vite --port {port} --strictPort`
+- Stop only through the script, by name. Never `stop --all`, `pkill`, `killall`, or
+  `fuser -k`.
 
 ## Why Setup completeness matters
 
@@ -76,10 +110,9 @@ itself has to be running.
 
 ## Setup
 1. From the repository root, run: npm install
-2. Start the application: npm run dev
-3. Wait for the line "ready on http://localhost:3000".
-4. Open http://localhost:3000 in a browser.
-5. Sign in with email demo@example.com and password demo1234.
+2. Start the application: bash docs/test-cases/lib/serve.sh start --name 42-draft-reload-app -- npm run dev -- --port {port}
+3. Open the URL from the OK line in a browser.
+4. Sign in with email demo@example.com and password demo1234.
 
 ## Steps
 1. Click "New note" in the left sidebar.
@@ -91,6 +124,9 @@ itself has to be running.
 
 ## Expected
 The body field reads "apples and bread".
+
+## Cleanup
+1. Run: bash docs/test-cases/lib/serve.sh stop 42-draft-reload-app
 ```
 
 ## Worked example: a command-line tool
@@ -138,7 +174,7 @@ Write what the screen should say: "The total reads $24.00".
 
 ```markdown
 ## Setup
-Start the app and open http://localhost:3000.
+Start the app and open the URL it prints.
 
 ## Steps
 1. Open the billing page.

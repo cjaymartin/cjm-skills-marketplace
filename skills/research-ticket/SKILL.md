@@ -3,6 +3,7 @@ name: research-ticket
 description: Turns a ticket reference into a research brief backed by code, git history and prior tickets, and surfaces the questions only a human can answer. Use at the start of work on a bug report, a support ticket, or a GitHub issue, before writing any test or any code.
 arguments: ticket_ref
 argument-hint: [ticket-ref]
+allowed-tools: Bash(${CLAUDE_SKILL_DIR}/scripts/fetch-ticket.sh *)
 ---
 
 # Research a ticket
@@ -12,16 +13,28 @@ Reference: `$ticket_ref`
 The output is a brief the rest of the chain trusts. Everything downstream reads it
 instead of re-reading the ticket, so what you leave out stays out.
 
-## 1. Pick a ticket source
+## 1. Read the ticket
 
-| The reference looks like | Use |
-|---|---|
-| `#123`, `owner/repo#123`, a github.com issue URL | [github-issue.md](ticket-sources/github-issue.md) |
-| a path ending `.md` | [markdown-file.md](ticket-sources/markdown-file.md) |
-| anything else | [plain-text.md](ticket-sources/plain-text.md) |
-| reserved, not built yet | [aitickets.md](ticket-sources/aitickets.md) |
+```bash
+${CLAUDE_SKILL_DIR}/scripts/fetch-ticket.sh "$ticket_ref"
+```
 
-Each returns the same four things: id, title, body, discussion.
+It reads a GitHub issue (`#123`, `owner/repo#123`, or an issue URL) or a `.md` file. It
+prints the id, title, state, labels, URL, body, the discussion oldest first, and the pull
+requests that mention the issue.
+
+- **Exit 3:** the reference is plain text. Follow [plain-text.md](ticket-sources/plain-text.md).
+- **Exit 1:** report the exact error. Then ask the human to paste the ticket and follow
+  [plain-text.md](ticket-sources/plain-text.md). Do not guess.
+- **State `CLOSED`:** say so at the top of the brief. Ask the human whether to continue
+  before you read more. A closed issue usually means the work is done, duplicated, or
+  rejected.
+- **A pull request mentions it:** someone may already be doing this work. Put it in
+  Prior art.
+- **Labels** often carry the environment, the version, or a triage decision that the body
+  leaves out. Read them.
+- **A `.md` file** comes back whole in the body. If it holds comments under a name or a
+  date, treat those as the discussion.
 
 ## 2. Read the repository
 
