@@ -35,6 +35,7 @@ Each one is a script, so it costs few tokens and does the same thing every time.
 | [`attach-images`](skills/attach-images/SKILL.md) | Puts screenshots on a side branch with no browser, and prints links for a PR or issue. |
 | [`watch-origin`](skills/watch-origin/SKILL.md) | Keeps a checkout and its dev server level with the remote branch. You call it by name. |
 | [`skillhound`](skills/skillhound/SKILL.md) | Runs that search again: finds repeated work in your chats that belongs in a skill or a script. You call it by name. |
+| [`jev`](skills/jev/SKILL.md) | Sends a multiple-choice or yes/no decision to Jev, a cheap decision model from TypeSafe. The agent takes the pick when Jev is sure, and decides itself when Jev is not. Needs a TypeSafe key. |
 
 The SDLC skills share one script, [`skills/implement/scripts/sdlc.sh`](skills/implement/scripts/sdlc.sh).
 It saves and gates blind verdicts, checks test-case hashes, makes base-branch checkouts

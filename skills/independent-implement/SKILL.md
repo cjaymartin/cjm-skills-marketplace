@@ -70,7 +70,9 @@ after it. Price the question at the moment you meet it, not from this list alone
 When you guess:
 
 1. Say the question out loud in your output. Do not guess quietly.
-2. Say the answer you are taking and why.
+2. Say the answer you are taking and why. If the `jev` skill is available and the answer
+   is one of a fixed set of options, send the question to Jev first. Take its pick when
+   its confidence is 0.7 or higher, and put `(Jev, 0.NN)` in the `Because:` line.
 3. Append the entry to `.sdlc/<ticket-id>/assumptions.md`, immediately, before continuing.
 4. Continue.
 
