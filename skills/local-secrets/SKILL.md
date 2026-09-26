@@ -71,20 +71,20 @@ line of the first missing key.
    `.gitignore` if nothing ignores it yet. It adds the key only if the key is not there.
 4. If every key is `set`, continue the task. Do not tell the user.
 5. If a key is `missing`, run `open` once with every key the task needs. It opens the
-   file in the user's editor at the first missing key, so the user does not have to find
-   it. It picks the editor this terminal belongs to (WebStorm and the other JetBrains
-   IDEs, VS Code, Cursor), else the first one it finds. It also copies `PATH:LINE` to the
-   clipboard. It prints:
+   file in VS Code at the first missing key, so the user does not have to find it. It uses
+   VS Code's own CLI when `code` is not on PATH. It falls back to Cursor or another
+   editor only when there is no VS Code. It also copies `PATH:LINE` to the clipboard. It
+   prints:
 
    ```
-   opened=webstorm
+   opened=code
    copied=yes
    at=/home/cj/code/shop/.env.production:12
    ```
 
 6. Stop that part of the task. Tell the user in this form:
 
-   > I need the production `STRIPE_SECRET_KEY`. I opened `.env.production` in WebStorm at
+   > I need the production `STRIPE_SECRET_KEY`. I opened `.env.production` in VS Code at
    > line 12. Fill in the value after `STRIPE_SECRET_KEY=`. The steps to get it are just
    > above that line. Tell me when it is saved.
    >
@@ -92,7 +92,7 @@ line of the first missing key.
 
    - Say where you opened it, from `opened=`. If it is `none`, say that the path is on
      the clipboard (if `copied=yes`), so the user can paste it into the editor's "Go to
-     file" box (Cmd+Shift+O in WebStorm, Cmd+P in VS Code).
+     file" box (Cmd+P in VS Code).
    - Always give the plain `PATH:LINE` from `at=`, in backticks, on its own line. Many
      terminals and IDEs let the user Cmd+click it.
    - Do not make `vscode://` or other editor links. Chat apps and many terminals block
@@ -102,7 +102,7 @@ line of the first missing key.
    - `open` starts no editor over SSH or in a cloud container, because the user cannot
      see it there. In that case, say the file is on that machine, not on the user's.
    - If the user names an editor, set `LOCAL_SECRETS_EDITOR` to its command, such as
-     `webstorm` or `code`, before the call.
+     `cursor` or `webstorm`, before the call.
 7. When the user says it is saved, run `check` again. Continue only on exit 0.
 
 Do other work that needs no secret while you wait, if there is some.

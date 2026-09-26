@@ -20,7 +20,7 @@
 #        key when no KEY is given), and copies "PATH:LINE" to the clipboard. It prints
 #        "opened=EDITOR" or "opened=none", and "copied=yes" or "copied=no". It does not
 #        start an editor over SSH or in a cloud container, where no one would see it.
-#        $LOCAL_SECRETS_EDITOR names the editor command to use first.
+#        VS Code comes first. $LOCAL_SECRETS_EDITOR names another editor command to use.
 # path   prints the path of the secrets file.
 #
 # need and check print one line per key, "set KEY" or "missing KEY line=N", then
@@ -91,38 +91,31 @@ in_file() { [ -f "$FILE" ] && grep -Eq "^[[:space:]]*(export[[:space:]]+)?$1[[:s
 # The line number of KEY in the file. Empty when not there.
 line_of() { [ -f "$FILE" ] && grep -En "^[[:space:]]*(export[[:space:]]+)?$1[[:space:]]*=" "$FILE" | tail -1 | cut -d: -f1; }
 
-# 0 when a person at this machine can see a window that opens: not over SSH, not in a
-# cloud container, and on Linux only with a display.
+# 0 when a person at this machine can see a window that opens: not over SSH and not in a
+# cloud container. A shell with no DISPLAY still counts: `code` reaches a running VS Code
+# through its own socket.
 local_screen() {
   [ -z "${SSH_CONNECTION:-}${SSH_TTY:-}" ] || return 1
   case "${CLAUDE_CODE_REMOTE_ENVIRONMENT_TYPE:-}" in cloud*) return 1 ;; esac
-  [ "$(uname)" = Darwin ] || [ -n "${DISPLAY:-}${WAYLAND_DISPLAY:-}" ] || [ -n "${WSL_DISTRO_NAME:-}" ]
 }
 
-# Opens FILE at line $1 in the first editor that exists. Prints the editor name.
-# The editor this terminal belongs to comes first, then the others on PATH.
+# Opens FILE at line $1 in VS Code, else in the first other editor that exists. Prints
+# the editor name. VS Code's own CLI inside the app is used when `code` is not on PATH.
 launch() {
   local line="$1" e order=()
   [ -n "${LOCAL_SECRETS_EDITOR:-}" ] && order+=("$LOCAL_SECRETS_EDITOR")
-  case "${TERMINAL_EMULATOR:-}" in JetBrains*) order+=(webstorm idea pycharm goland rubymine phpstorm) ;; esac
-  [ "${TERM_PROGRAM:-}" = vscode ] && order+=(cursor windsurf code)
-  order+=(code cursor windsurf webstorm idea pycharm goland zed subl)
+  order+=(code /snap/bin/code "/Applications/Visual Studio Code.app/Contents/Resources/app/bin/code"
+    "$HOME/Applications/Visual Studio Code.app/Contents/Resources/app/bin/code"
+    cursor windsurf code-insiders zed subl webstorm idea)
   for e in "${order[@]}"; do
     command -v "$e" >/dev/null 2>&1 || continue
-    case "$e" in
+    case "$(basename "$e")" in
       webstorm|idea|pycharm|goland|rubymine|phpstorm) "$e" --line "$line" "$FILE" ;;
       zed|subl) "$e" "$FILE:$line" ;;
       *) "$e" -g "$FILE:$line" ;;
-    esac >/dev/null 2>&1 </dev/null && { echo "$e"; return 0; }
+    esac >/dev/null 2>&1 </dev/null && { echo "$(basename "$e")"; return 0; }
   done
   if [ "$(uname)" = Darwin ]; then
-    for e in WebStorm "IntelliJ IDEA" "Visual Studio Code" Cursor; do
-      [ -d "/Applications/$e.app" ] || continue
-      case "$e" in
-        WebStorm|IntelliJ*) open -na "$e.app" --args --line "$line" "$FILE" ;;
-        *) open -a "$e.app" "$FILE" ;;
-      esac >/dev/null 2>&1 && { echo "$e"; return 0; }
-    done
     open -t "$FILE" >/dev/null 2>&1 && { echo "default-text-editor"; return 0; }
   fi
   command -v xdg-open >/dev/null 2>&1 && xdg-open "$FILE" >/dev/null 2>&1 && { echo xdg-open; return 0; }

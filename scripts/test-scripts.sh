@@ -145,14 +145,16 @@ check "values read like dotenv" test "$("$SC" run -- sh -c 'printf "%s|" "$P1" "
 check "need appends after a file with no final newline" bash -c "grep -qx 'P6=last' $F && grep -qx 'P7=' $F"
 check "a new key leaves other keys alone" test "$("$SC" run -- sh -c 'printf %s "$P1"')" = abc
 mkdir -p "$T/bin" && for e in code webstorm pbcopy; do printf '#!/bin/sh\necho "$@" >> "%s/%s.log"\ncat >> "%s/%s.log" 2>/dev/null; exit 0\n' "$T" "$e" "$T" "$e" > "$T/bin/$e"; chmod +x "$T/bin/$e"; done
-local_env() { env -u SSH_CONNECTION -u SSH_TTY -u CLAUDE_CODE_REMOTE_ENVIRONMENT_TYPE -u TERMINAL_EMULATOR -u TERM_PROGRAM DISPLAY=:0 PATH="$T/bin:$PATH" "$@"; }
+local_env() { env -u SSH_CONNECTION -u SSH_TTY -u CLAUDE_CODE_REMOTE_ENVIRONMENT_TYPE -u TERMINAL_EMULATOR -u TERM_PROGRAM PATH="$T/bin:$PATH" "$@"; }
 code 0 "open runs" local_env "$SC" open API_KEY P7
 check "open starts VS Code at the first missing key" bash -c "grep -qx -- '-g $T/sec/$F:$(grep -n '^P7=' $F | cut -d: -f1)' '$T/code.log'"
 check "open copies path:line" bash -c "grep -q '$T/sec/$F:' '$T/pbcopy.log' && grep -qx 'copied=yes' '$T/out'"
 code 0 "open with no key finds the first empty key" local_env "$SC" open
 check "that is P7" grep -qx "at=$T/sec/$F:$(grep -n '^P7=' $F | cut -d: -f1)" "$T/out"
-code 0 "open in a JetBrains terminal" local_env TERMINAL_EMULATOR=JetBrains-JediTerm "$SC" open P7
-check "open starts WebStorm with --line" bash -c "grep -q -- '--line [0-9]* $T/sec/$F' '$T/webstorm.log' && grep -qx 'opened=webstorm' '$T/out'"
+code 0 "open in a JetBrains terminal still picks VS Code" local_env TERMINAL_EMULATOR=JetBrains-JediTerm "$SC" open P7
+check "opened=code" grep -qx 'opened=code' "$T/out"
+code 0 "LOCAL_SECRETS_EDITOR wins" local_env LOCAL_SECRETS_EDITOR=webstorm "$SC" open P7
+check "WebStorm gets --line" bash -c "grep -q -- '--line [0-9]* $T/sec/$F' '$T/webstorm.log' && grep -qx 'opened=webstorm' '$T/out'"
 code 0 "open over SSH" local_env SSH_CONNECTION="1 2 3 4" "$SC" open P7
 check "starts no editor over SSH" bash -c "grep -qx 'opened=none' '$T/out' && grep -qx 'copied=no' '$T/out'"
 code 3 "production is its own file" "$SC" --env production need API_KEY --how "Use the live account."
