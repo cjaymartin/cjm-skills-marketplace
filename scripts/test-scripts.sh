@@ -127,7 +127,7 @@ check "the default file is .env.development at the repo root" test -f "$T/sec/$F
 check "the file is private" bash -c "ls -l '$T/sec/$F' | grep -q '^-rw-------'"
 check "the file is gitignored" git check-ignore -q $F
 check ".env.example is not ignored" bash -c "! git check-ignore -q .env.example"
-check "need gives an editor link at the key's line" grep -qx "open=vscode://file$T/sec/$F:$(grep -n '^API_KEY=' $F | cut -d: -f1)" "$T/out"
+check "need gives the path and line of the key" grep -qx "at=$T/sec/$F:$(grep -n '^API_KEY=' $F | cut -d: -f1)" "$T/out"
 check "the steps are written" bash -c "grep -qx '#   2. Copy the key.' $F && grep -qx 'API_KEY=' $F && grep -q 'Used by: the tests' $F"
 "$SC" need API_KEY --how "Other steps." >/dev/null 2>&1
 check "a second need adds nothing" test "$(grep -c '^API_KEY=' $F)" = 1
@@ -135,17 +135,26 @@ check "a second need does not add a second ignore rule" test "$(grep -c '^\.env\
 sed 's/^API_KEY=$/API_KEY="s3cr3t value" # a note/' $F > "$T/f" && cat "$T/f" > $F
 code 0 "check passes once filled" "$SC" check API_KEY
 check "check never prints the value" bash -c "! grep -q s3cr3t '$T/out'"
-check "check prints no link when every key is set" bash -c "! grep -q '^open=' '$T/out'"
+check "check prints no at= when every key is set" bash -c "! grep -q '^at=' '$T/out'"
 code 3 "check fails on one missing key" "$SC" check API_KEY OTHER
 code 3 "a key in the shell environment does not count" env OTHER=1 "$SC" check OTHER
-code 3 "another editor" env LOCAL_SECRETS_EDITOR=cursor "$SC" check OTHER
-check "the link uses that editor" grep -q '^open=cursor://file/' "$T/out"
 check "run loads the value without quotes or comment" test "$("$SC" run -- sh -c 'printf %s "$API_KEY"')" = "s3cr3t value"
 printf 'P1=abc # note\nP2=p=q#r\nP3=val\r\nexport P4=g\nP5=# nothing\nP6=last' >> $F
 check "values read like dotenv" test "$("$SC" run -- sh -c 'printf "%s|" "$P1" "$P2" "$P3" "$P4" "${P5:-}" "$P6"')" = "abc|p=q#r|val|g||last|"
 "$SC" need P7 --how x >/dev/null 2>&1
 check "need appends after a file with no final newline" bash -c "grep -qx 'P6=last' $F && grep -qx 'P7=' $F"
 check "a new key leaves other keys alone" test "$("$SC" run -- sh -c 'printf %s "$P1"')" = abc
+mkdir -p "$T/bin" && for e in code webstorm pbcopy; do printf '#!/bin/sh\necho "$@" >> "%s/%s.log"\ncat >> "%s/%s.log" 2>/dev/null; exit 0\n' "$T" "$e" "$T" "$e" > "$T/bin/$e"; chmod +x "$T/bin/$e"; done
+local_env() { env -u SSH_CONNECTION -u SSH_TTY -u CLAUDE_CODE_REMOTE_ENVIRONMENT_TYPE -u TERMINAL_EMULATOR -u TERM_PROGRAM DISPLAY=:0 PATH="$T/bin:$PATH" "$@"; }
+code 0 "open runs" local_env "$SC" open API_KEY P7
+check "open starts VS Code at the first missing key" bash -c "grep -qx -- '-g $T/sec/$F:$(grep -n '^P7=' $F | cut -d: -f1)' '$T/code.log'"
+check "open copies path:line" bash -c "grep -q '$T/sec/$F:' '$T/pbcopy.log' && grep -qx 'copied=yes' '$T/out'"
+code 0 "open with no key finds the first empty key" local_env "$SC" open
+check "that is P7" grep -qx "at=$T/sec/$F:$(grep -n '^P7=' $F | cut -d: -f1)" "$T/out"
+code 0 "open in a JetBrains terminal" local_env TERMINAL_EMULATOR=JetBrains-JediTerm "$SC" open P7
+check "open starts WebStorm with --line" bash -c "grep -q -- '--line [0-9]* $T/sec/$F' '$T/webstorm.log' && grep -qx 'opened=webstorm' '$T/out'"
+code 0 "open over SSH" local_env SSH_CONNECTION="1 2 3 4" "$SC" open P7
+check "starts no editor over SSH" bash -c "grep -qx 'opened=none' '$T/out' && grep -qx 'copied=no' '$T/out'"
 code 3 "production is its own file" "$SC" --env production need API_KEY --how "Use the live account."
 check "production file is .env.production" grep -q "^file=$T/sec/.env.production$" "$T/out"
 check "production file warns it holds live values" grep -q 'LIVE production values' .env.production
@@ -167,7 +176,7 @@ check "the main checkout's own files are not changed" test -z "$(git -C "$T/sec2
 git init -q --bare "$T/bare/.bare" && git -C "$T/bare/.bare" worktree add -q ../w1 2>/dev/null
 check "a bare repo's worktrees share the file" test "$(cd "$T/bare/w1" && "$SC" path)" = "$T/bare/.env.development"
 mkdir -p "$T/a b#c" && (cd "$T/a b#c" && "$SC" check X) > "$T/out" 2>&1
-check "the link encodes spaces and #" grep -q "^open=vscode://file$T/a%20b%23c/.env.development:1$" "$T/out"
+check "at= keeps the path as it is" grep -q "^at=$T/a b#c/.env.development:1$" "$T/out"
 echo "PUBLIC_URL=x" > .env.staging && git add -f .env.staging && git commit -qm defaults
 check "a tracked .env.staging falls back to .env.staging.local" test "$("$SC" --env staging path)" = "$T/sec/.env.staging.local"
 code 1 "need refuses a tracked file" env LOCAL_SECRETS_FILE=.env.staging "$SC" need NEW_KEY --how "x"

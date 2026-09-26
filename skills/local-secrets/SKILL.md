@@ -31,6 +31,7 @@ ${CLAUDE_SKILL_DIR}/scripts/secrets.sh --env production need STRIPE_SECRET_KEY \
   --how "Next to 'Secret key', click Reveal live key and copy it. It starts with sk_live_." \
   --url https://dashboard.stripe.com/apikeys
 ${CLAUDE_SKILL_DIR}/scripts/secrets.sh --env production check STRIPE_SECRET_KEY OPENAI_API_KEY
+${CLAUDE_SKILL_DIR}/scripts/secrets.sh --env production open STRIPE_SECRET_KEY OPENAI_API_KEY
 ${CLAUDE_SKILL_DIR}/scripts/secrets.sh --env production run -- npm run migrate
 ${CLAUDE_SKILL_DIR}/scripts/secrets.sh --env staging path
 ```
@@ -41,11 +42,11 @@ ${CLAUDE_SKILL_DIR}/scripts/secrets.sh --env staging path
 missing STRIPE_SECRET_KEY line=12
 env=production
 file=/home/cj/code/shop/.env.production
-open=vscode://file/home/cj/code/shop/.env.production:12
+at=/home/cj/code/shop/.env.production:12
 ```
 
-Exit 0 means every key has a value. Exit 3 means a key is missing. `open=` is a link
-that opens the file in the editor at the first missing key.
+Exit 0 means every key has a value. Exit 3 means a key is missing. `at=` is the path and
+line of the first missing key.
 
 ## The rules
 
@@ -69,26 +70,40 @@ that opens the file in the editor at the first missing key.
 3. Run `need` for each key, with `--env`. It creates the file if needed. It adds the file to
    `.gitignore` if nothing ignores it yet. It adds the key only if the key is not there.
 4. If every key is `set`, continue the task. Do not tell the user.
-5. If a key is `missing`, run `check` once with every key the task needs. Then stop that
-   part of the task. Tell the user in this form:
+5. If a key is `missing`, run `open` once with every key the task needs. It opens the
+   file in the user's editor at the first missing key, so the user does not have to find
+   it. It picks the editor this terminal belongs to (WebStorm and the other JetBrains
+   IDEs, VS Code, Cursor), else the first one it finds. It also copies `PATH:LINE` to the
+   clipboard. It prints:
 
-   > I need the production `STRIPE_SECRET_KEY`. [Open .env.production in VS Code](vscode://file/home/cj/code/shop/.env.production:12)
-   > and fill in the value after `STRIPE_SECRET_KEY=` on line 12. The steps to get it are
-   > in the file above that line. Tell me when it is saved.
+   ```
+   opened=webstorm
+   copied=yes
+   at=/home/cj/code/shop/.env.production:12
+   ```
+
+6. Stop that part of the task. Tell the user in this form:
+
+   > I need the production `STRIPE_SECRET_KEY`. I opened `.env.production` in WebStorm at
+   > line 12. Fill in the value after `STRIPE_SECRET_KEY=`. The steps to get it are just
+   > above that line. Tell me when it is saved.
    >
-   > Or run: `code -g /home/cj/code/shop/.env.production:12`
+   > `/home/cj/code/shop/.env.production:12`
 
-   - Put the `open=` link first, as a markdown link. One click opens the file at the key.
-   - Give the `code -g PATH:LINE` command too. Some terminals do not open `vscode://` links.
+   - Say where you opened it, from `opened=`. If it is `none`, say that the path is on
+     the clipboard (if `copied=yes`), so the user can paste it into the editor's "Go to
+     file" box (Cmd+Shift+O in WebStorm, Cmd+P in VS Code).
+   - Always give the plain `PATH:LINE` from `at=`, in backticks, on its own line. Many
+     terminals and IDEs let the user Cmd+click it.
+   - Do not make `vscode://` or other editor links. Chat apps and many terminals block
+     them.
    - Name every missing key in one message, each with its line number.
    - Always name the environment. A production value in the wrong file is a real risk.
-   - The link opens a file on the machine where the script ran. If you run in a cloud
-     container or over SSH, the file is not on the user's machine. Say so, and give the
-     path on the machine where it is.
-   - For another editor, set `LOCAL_SECRETS_EDITOR` to `cursor`, `windsurf`, or
-     `vscode-insiders` before the call. Use the one the user uses. The CLI command then is
-     `cursor -g`, `windsurf -g`, or `code-insiders -g`.
-6. When the user says it is saved, run `check` again. Continue only on exit 0.
+   - `open` starts no editor over SSH or in a cloud container, because the user cannot
+     see it there. In that case, say the file is on that machine, not on the user's.
+   - If the user names an editor, set `LOCAL_SECRETS_EDITOR` to its command, such as
+     `webstorm` or `code`, before the call.
+7. When the user says it is saved, run `check` again. Continue only on exit 0.
 
 Do other work that needs no secret while you wait, if there is some.
 

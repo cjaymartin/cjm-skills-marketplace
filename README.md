@@ -36,7 +36,7 @@ Each one is a script, so it costs few tokens and does the same thing every time.
 | [`watch-origin`](skills/watch-origin/SKILL.md) | Keeps a checkout and its dev server level with the remote branch. You call it by name. |
 | [`skillhound`](skills/skillhound/SKILL.md) | Runs that search again: finds repeated work in your chats that belongs in a skill or a script. You call it by name. |
 | [`jev`](skills/jev/SKILL.md) | Sends a multiple-choice or yes/no decision to Jev, a cheap decision model from TypeSafe. The agent takes the pick when Jev is sure, and decides itself when Jev is not. Needs a TypeSafe key. |
-| [`local-secrets`](skills/local-secrets/SKILL.md) | Keeps secrets in one gitignored file per environment, such as `.env.development` and `.env.production`, that you fill in by hand. The agent adds each key with the steps to get it, gives you a link that opens the file at that line, and never sees the values. No more "paste your key here" commands. |
+| [`local-secrets`](skills/local-secrets/SKILL.md) | Keeps secrets in one gitignored file per environment, such as `.env.development` and `.env.production`, that you fill in by hand. The agent adds each key with the steps to get it, opens the file in your editor (WebStorm, VS Code, Cursor) at that line, and never sees the values. No more "paste your key here" commands. |
 
 The SDLC skills share one script, [`skills/implement/scripts/sdlc.sh`](skills/implement/scripts/sdlc.sh).
 It saves and gates blind verdicts, checks test-case hashes, makes base-branch checkouts
