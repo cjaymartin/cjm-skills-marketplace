@@ -121,24 +121,37 @@ check "counts a chore pattern" bash -c "python3 '$S/skillhound/scripts/hound.py'
 echo "--- secrets.sh"
 SC="$S/local-secrets/scripts/secrets.sh"
 git init -q "$T/sec" && cd "$T/sec" && git config user.email t@t && git config user.name t && git commit -q --allow-empty -m base
+F=.env.development
 code 3 "need reports a new key as missing" "$SC" need API_KEY --how "Open the site." --how "Copy the key." --url https://x.test --used-by "the tests"
-check "the file is made at the repo root" test -f "$T/sec/.env.local"
-check "the file is private" bash -c "ls -l '$T/sec/.env.local' | grep -q '^-rw-------'"
-check "the file is gitignored" git check-ignore -q .env.local
-check "the steps are written" bash -c "grep -qx '#   2. Copy the key.' .env.local && grep -qx 'API_KEY=' .env.local && grep -q 'Used by: the tests' .env.local"
+check "the default file is .env.development at the repo root" test -f "$T/sec/$F"
+check "the file is private" bash -c "ls -l '$T/sec/$F' | grep -q '^-rw-------'"
+check "the file is gitignored" git check-ignore -q $F
+check ".env.example is not ignored" bash -c "! git check-ignore -q .env.example"
+check "need gives an editor link at the key's line" grep -qx "open=vscode://file$T/sec/$F:$(grep -n '^API_KEY=' $F | cut -d: -f1)" "$T/out"
+check "the steps are written" bash -c "grep -qx '#   2. Copy the key.' $F && grep -qx 'API_KEY=' $F && grep -q 'Used by: the tests' $F"
 "$SC" need API_KEY --how "Other steps." >/dev/null 2>&1
-check "a second need adds nothing" test "$(grep -c '^API_KEY=' .env.local)" = 1
-check "a second need does not add a second ignore rule" test "$(grep -c 'env\*.local' .gitignore)" = 1
-sed -i 's/^API_KEY=$/API_KEY="s3cr3t value"/' .env.local
+check "a second need adds nothing" test "$(grep -c '^API_KEY=' $F)" = 1
+check "a second need does not add a second ignore rule" test "$(grep -c '^\.env\.\*$' .gitignore)" = 1
+sed -i 's/^API_KEY=$/API_KEY="s3cr3t value"/' $F
 code 0 "check passes once filled" "$SC" check API_KEY
 check "check never prints the value" bash -c "! grep -q s3cr3t '$T/out'"
+check "check prints no link when every key is set" bash -c "! grep -q '^open=' '$T/out'"
 code 3 "check fails on one missing key" "$SC" check API_KEY OTHER
-code 0 "a key in the environment counts as set" env OTHER=1 "$SC" check OTHER
+code 3 "a key in the shell environment does not count" env OTHER=1 "$SC" check OTHER
+code 3 "another editor" env LOCAL_SECRETS_EDITOR=cursor "$SC" check OTHER
+check "the link uses that editor" grep -q '^open=cursor://file/' "$T/out"
 check "run loads the value without quotes" test "$("$SC" run -- sh -c 'printf %s "$API_KEY"')" = "s3cr3t value"
+code 3 "production is its own file" "$SC" --env production need API_KEY --how "Use the live account."
+check "production file is .env.production" grep -q "^file=$T/sec/.env.production$" "$T/out"
+check "production file warns it holds live values" grep -q 'LIVE production values' .env.production
+check "run --env production does not load development values" test -z "$("$SC" --env production run -- sh -c 'printf %s "${API_KEY:-}"')"
+code 0 "LOCAL_SECRETS_ENV picks the environment" env LOCAL_SECRETS_ENV=development "$SC" check API_KEY
+code 2 "an env name with a slash is bad usage" "$SC" --env ../x path
 git worktree add -q "$T/secwt" 2>/dev/null
-check "a worktree uses the main checkout's file" test "$(cd "$T/secwt" && "$SC" path)" = "$T/sec/.env.local"
-git rm -q --cached .gitignore 2>/dev/null; rm .gitignore; git add -f .env.local && git commit -qm oops
-code 1 "need refuses a tracked file" "$SC" need NEW_KEY --how "x"
+check "a worktree uses the main checkout's file" test "$(cd "$T/secwt" && "$SC" path)" = "$T/sec/$F"
+echo "PUBLIC_URL=x" > .env.staging && git add -f .env.staging && git commit -qm defaults
+check "a tracked .env.staging falls back to .env.staging.local" test "$("$SC" --env staging path)" = "$T/sec/.env.staging.local"
+code 1 "need refuses a tracked file" env LOCAL_SECRETS_FILE=.env.staging "$SC" need NEW_KEY --how "x"
 code 2 "need without steps is bad usage" "$SC" need NEW_KEY
 cd "$T/repo" || exit 1
 
