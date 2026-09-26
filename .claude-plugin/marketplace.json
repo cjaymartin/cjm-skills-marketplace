@@ -10,7 +10,7 @@
       "name": "agent-sdlc",
       "source": "./",
       "description": "An agent-driven SDLC: research a ticket, prove the failure blind, build it test-first, prove the fix blind, review your own work. Plus scripted everyday tools: dev servers, test summaries, PR status, image attachments.",
-      "version": "0.8.0",
+      "version": "0.9.0",
       "license": "MIT",
       "homepage": "https://github.com/cjaymartin/cjm-skills-marketplace",
       "author": {

@@ -36,6 +36,7 @@ Each one is a script, so it costs few tokens and does the same thing every time.
 | [`watch-origin`](skills/watch-origin/SKILL.md) | Keeps a checkout and its dev server level with the remote branch. You call it by name. |
 | [`skillhound`](skills/skillhound/SKILL.md) | Runs that search again: finds repeated work in your chats that belongs in a skill or a script. You call it by name. |
 | [`jev`](skills/jev/SKILL.md) | Sends a multiple-choice or yes/no decision to Jev, a cheap decision model from TypeSafe. The agent takes the pick when Jev is sure, and decides itself when Jev is not. Needs a TypeSafe key. |
+| [`local-secrets`](skills/local-secrets/SKILL.md) | Keeps every secret in one gitignored `.env.local` that you fill in by hand. The agent adds each key with the steps to get it, checks which keys are set, and never sees the values. No more "paste your key here" commands. |
 
 The SDLC skills share one script, [`skills/implement/scripts/sdlc.sh`](skills/implement/scripts/sdlc.sh).
 It saves and gates blind verdicts, checks test-case hashes, makes base-branch checkouts
@@ -198,7 +199,7 @@ claude plugin list
 
 You want `agent-sdlc@cjm-skills-marketplace` marked enabled.
 
-Then type `/agent-sdlc:` and look for thirteen skills.
+Then type `/agent-sdlc:` and look for fourteen skills.
 
 **Give it a minute.** A newly installed plugin registers after a rescan, not
 immediately, and the installer's "Restart to apply changes" overstates it. A call made
