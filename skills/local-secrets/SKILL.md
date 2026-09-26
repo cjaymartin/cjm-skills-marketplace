@@ -11,10 +11,15 @@ the main checkout: `.env.development`, `.env.staging`, `.env.production`, and so
 add the keys. The user fills in the values. You never see the values.
 
 You must make sure git ignores the file before any value goes in it. `need` does this for
-you: if no rule in `.gitignore` covers the file, it adds `.env.*` and `!.env.example` to
-the `.gitignore` at the repo root, then checks with `git check-ignore`. If it cannot make
-git ignore the file, it stops with exit 1 and writes nothing. Commit that `.gitignore`
-change with the rest of your work, so the rule reaches every clone.
+you. If no rule covers the file, it adds `.env.*` to the `.gitignore` of the checkout you
+work in, with `!` rules that keep `.env.example`, `.env.sample` and `.env.template`
+committable. Then it checks with `git check-ignore`. If git still does not ignore the
+file, it stops with exit 1 and writes nothing.
+
+When `need` prints `gitignored ... Commit this change.`, commit that `.gitignore` with the
+rest of your work, so the rule reaches every clone. In a linked worktree it also prints
+`also excluded ... info/exclude`: that keeps the file ignored in the main checkout until
+your `.gitignore` change is merged.
 
 Give `--env` first, before the command. Without it, the environment is `development`.
 

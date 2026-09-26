@@ -26,7 +26,10 @@
 # The file is .env.ENV at the root of the main checkout, so every worktree and every
 # session in one repo shares it. Outside git it is ./.env.ENV. If git already tracks
 # .env.ENV (some projects commit defaults there), the file is .env.ENV.local instead.
-# need adds ".env.*" and "!.env.example" to .gitignore if nothing ignores the file yet.
+# need makes sure git ignores the file. If nothing ignores it yet, it adds ".env.*" (and
+# "!" rules for .env.example, .env.sample and .env.template) to the .gitignore of the
+# checkout you run it in. In a linked worktree it also adds the rule to the repo's
+# info/exclude, because the main checkout only sees the .gitignore change after a merge.
 # $LOCAL_SECRETS_FILE overrides the path.
 
 set -uo pipefail
@@ -35,10 +38,11 @@ die() { echo "secrets: $*" >&2; exit 1; }
 usage() { sed -n '2,33p' "$0" | sed 's/^# \{0,1\}//'; exit 2; }
 
 # The root of the main checkout, not of a linked worktree, so all worktrees share one file.
+# For a bare repo with worktrees (proj/.bare, proj/w1, proj/w2) it is the bare repo's parent.
 root() {
   local common
   common="$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null)" || { git rev-parse --show-toplevel 2>/dev/null || pwd; return; }
-  if [ "$(basename "$common")" = .git ]; then
+  if [ "$(basename "$common")" = .git ] || [ "$(git --git-dir="$common" rev-parse --is-bare-repository 2>/dev/null)" = true ]; then
     dirname "$common"
   else
     git rev-parse --show-toplevel 2>/dev/null || pwd
@@ -62,11 +66,19 @@ DIR="$(dirname "$FILE")"
 
 valid_key() { [[ "$1" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]]; }
 
-# The value of KEY in the file, with surrounding quotes removed. Empty when not there.
+# The value of KEY in the file, read the way dotenv reads it: a quoted value is the text
+# between its quotes; an unquoted value stops at " #". Empty when not there.
 file_value() {
   [ -f "$FILE" ] || return 0
-  sed -n "s/^[[:space:]]*\(export[[:space:]]\{1,\}\)\{0,1\}$1[[:space:]]*=[[:space:]]*//p" "$FILE" \
-    | tail -1 | sed -e 's/[[:space:]]*$//' -e 's/^"\(.*\)"$/\1/' -e "s/^'\(.*\)'$/\1/"
+  local v
+  v="$(sed -n "s/^[[:space:]]*\(export[[:space:]]\{1,\}\)\{0,1\}$1[[:space:]]*=[[:space:]]*//p" "$FILE" | tail -1 | tr -d '\r')"
+  case "$v" in
+    \"*) v="${v#\"}"; v="${v%%\"*}" ;;
+    \'*) v="${v#\'}"; v="${v%%\'*}" ;;
+    \#*) v="" ;;
+    *) v="${v%%[[:space:]]#*}"; v="${v%"${v##*[![:space:]]}"}" ;;
+  esac
+  printf '%s' "$v"
 }
 
 in_file() { [ -f "$FILE" ] && grep -Eq "^[[:space:]]*(export[[:space:]]+)?$1[[:space:]]*=" "$FILE"; }
@@ -76,7 +88,8 @@ line_of() { [ -f "$FILE" ] && grep -En "^[[:space:]]*(export[[:space:]]+)?$1[[:s
 
 # A link that opens the file at a line, such as vscode://file/home/cj/app/.env.production:12
 open_url() {
-  local path="${FILE// /%20}"
+  local path="${FILE//%/%25}"
+  path="${path// /%20}"; path="${path//#/%23}"; path="${path//\?/%3F}"
   printf '%s://file%s:%s\n' "${LOCAL_SECRETS_EDITOR:-vscode}" "$path" "$1"
 }
 
@@ -90,13 +103,35 @@ guard_git() {
     die "$FILE is tracked by git. Values in it would be committed. Remove it from git first: git rm --cached $FILE"
   fi
   git -C "$DIR" check-ignore -q -- "$FILE" && return 0
-  local top gi
+
+  # The rule: .env.* for the usual names, else the file's own path from the repo root.
+  local rule top here gi ex
   top="$(git -C "$DIR" rev-parse --show-toplevel)"
-  gi="$top/.gitignore"
-  [ -s "$gi" ] && [ -n "$(tail -c1 "$gi")" ] && echo >> "$gi"
-  printf '# Local secrets, one file per environment. Filled in by hand. Never commit.\n.env.*\n!.env.example\n' >> "$gi"
-  git -C "$DIR" check-ignore -q -- "$FILE" || die "added .env.* to $gi but git still does not ignore $FILE"
-  echo "gitignored .env.* in $gi" >&2
+  case "$(basename "$FILE")" in
+    .env.*) rule='.env.*' ;;
+    *) rule="/${FILE#"$top"/}" ;;
+  esac
+
+  # Add it to the .gitignore of the checkout the agent works in, so it gets committed.
+  here="$(git rev-parse --show-toplevel 2>/dev/null || echo "$top")"
+  gi="$here/.gitignore"
+  if ! grep -qxF -- "$rule" "$gi" 2>/dev/null; then
+    [ -s "$gi" ] && [ -n "$(tail -c1 "$gi")" ] && echo >> "$gi"
+    {
+      echo "# Local secrets. Filled in by hand. Never commit."
+      echo "$rule"
+      [ "$rule" = '.env.*' ] && printf '!.env.example\n!.env.sample\n!.env.template\n'
+    } >> "$gi"
+    echo "gitignored $rule in $gi. Commit this change." >&2
+  fi
+
+  # A linked worktree's .gitignore does not cover the main checkout until it is merged.
+  if ! git -C "$DIR" check-ignore -q -- "$FILE"; then
+    ex="$(git -C "$DIR" rev-parse --path-format=absolute --git-common-dir)/info/exclude"
+    mkdir -p "$(dirname "$ex")" && printf '%s\n' "$rule" >> "$ex"
+    echo "also excluded $rule in $ex" >&2
+  fi
+  git -C "$DIR" check-ignore -q -- "$FILE" || die "git still does not ignore $FILE. Nothing was written to it."
 }
 
 create_file() {
@@ -129,6 +164,7 @@ cmd_need() {
   done
   [ ${#how[@]} -gt 0 ] || { echo "secrets: need $key needs at least one --how step" >&2; exit 2; }
 
+  mkdir -p "$DIR" || die "cannot make $DIR"
   guard_git
   create_file
   if ! in_file "$key"; then

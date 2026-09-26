@@ -132,7 +132,7 @@ check "the steps are written" bash -c "grep -qx '#   2. Copy the key.' $F && gre
 "$SC" need API_KEY --how "Other steps." >/dev/null 2>&1
 check "a second need adds nothing" test "$(grep -c '^API_KEY=' $F)" = 1
 check "a second need does not add a second ignore rule" test "$(grep -c '^\.env\.\*$' .gitignore)" = 1
-sed -i 's/^API_KEY=$/API_KEY="s3cr3t value"/' $F
+sed 's/^API_KEY=$/API_KEY="s3cr3t value" # a note/' $F > "$T/f" && cat "$T/f" > $F
 code 0 "check passes once filled" "$SC" check API_KEY
 check "check never prints the value" bash -c "! grep -q s3cr3t '$T/out'"
 check "check prints no link when every key is set" bash -c "! grep -q '^open=' '$T/out'"
@@ -140,15 +140,34 @@ code 3 "check fails on one missing key" "$SC" check API_KEY OTHER
 code 3 "a key in the shell environment does not count" env OTHER=1 "$SC" check OTHER
 code 3 "another editor" env LOCAL_SECRETS_EDITOR=cursor "$SC" check OTHER
 check "the link uses that editor" grep -q '^open=cursor://file/' "$T/out"
-check "run loads the value without quotes" test "$("$SC" run -- sh -c 'printf %s "$API_KEY"')" = "s3cr3t value"
+check "run loads the value without quotes or comment" test "$("$SC" run -- sh -c 'printf %s "$API_KEY"')" = "s3cr3t value"
+printf 'P1=abc # note\nP2=p=q#r\nP3=val\r\nexport P4=g\nP5=# nothing\nP6=last' >> $F
+check "values read like dotenv" test "$("$SC" run -- sh -c 'printf "%s|" "$P1" "$P2" "$P3" "$P4" "${P5:-}" "$P6"')" = "abc|p=q#r|val|g||last|"
+"$SC" need P7 --how x >/dev/null 2>&1
+check "need appends after a file with no final newline" bash -c "grep -qx 'P6=last' $F && grep -qx 'P7=' $F"
+check "a new key leaves other keys alone" test "$("$SC" run -- sh -c 'printf %s "$P1"')" = abc
 code 3 "production is its own file" "$SC" --env production need API_KEY --how "Use the live account."
 check "production file is .env.production" grep -q "^file=$T/sec/.env.production$" "$T/out"
 check "production file warns it holds live values" grep -q 'LIVE production values' .env.production
 check "run --env production does not load development values" test -z "$("$SC" --env production run -- sh -c 'printf %s "${API_KEY:-}"')"
 code 0 "LOCAL_SECRETS_ENV picks the environment" env LOCAL_SECRETS_ENV=development "$SC" check API_KEY
 code 2 "an env name with a slash is bad usage" "$SC" --env ../x path
+mkdir -p sub && check "a subfolder uses the root file" test "$(cd sub && "$SC" path)" = "$T/sec/$F"
+code 3 "a file in a folder that does not exist yet" env LOCAL_SECRETS_FILE=cfg/sec/.env.x "$SC" need K --how x
+check "that file is gitignored too" git check-ignore -q cfg/sec/.env.x
+code 3 "a custom file name" env LOCAL_SECRETS_FILE=my.secrets "$SC" need K --how x
+check "gets its own ignore rule" bash -c "grep -qx '/my.secrets' .gitignore && git check-ignore -q my.secrets"
 git worktree add -q "$T/secwt" 2>/dev/null
 check "a worktree uses the main checkout's file" test "$(cd "$T/secwt" && "$SC" path)" = "$T/sec/$F"
+git init -q "$T/sec2" && git -C "$T/sec2" -c user.email=t@t -c user.name=t commit -q --allow-empty -m base && git -C "$T/sec2" worktree add -q "$T/sec2wt" 2>/dev/null
+code 3 "need in a linked worktree of a repo with no ignore rule" bash -c "cd '$T/sec2wt' && '$SC' need K --how x"
+check "the rule goes in the worktree's .gitignore, to commit" grep -qx '.env.\*' "$T/sec2wt/.gitignore"
+check "the main checkout ignores the file now" git -C "$T/sec2" check-ignore -q "$T/sec2/.env.development"
+check "the main checkout's own files are not changed" test -z "$(git -C "$T/sec2" status --porcelain)"
+git init -q --bare "$T/bare/.bare" && git -C "$T/bare/.bare" worktree add -q ../w1 2>/dev/null
+check "a bare repo's worktrees share the file" test "$(cd "$T/bare/w1" && "$SC" path)" = "$T/bare/.env.development"
+mkdir -p "$T/a b#c" && (cd "$T/a b#c" && "$SC" check X) > "$T/out" 2>&1
+check "the link encodes spaces and #" grep -q "^open=vscode://file$T/a%20b%23c/.env.development:1$" "$T/out"
 echo "PUBLIC_URL=x" > .env.staging && git add -f .env.staging && git commit -qm defaults
 check "a tracked .env.staging falls back to .env.staging.local" test "$("$SC" --env staging path)" = "$T/sec/.env.staging.local"
 code 1 "need refuses a tracked file" env LOCAL_SECRETS_FILE=.env.staging "$SC" need NEW_KEY --how "x"
