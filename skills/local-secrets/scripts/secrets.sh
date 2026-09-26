@@ -5,6 +5,7 @@
 #   secrets.sh [--env ENV] need KEY --how "step" [--how "step"]... [--url URL] [--used-by TEXT]
 #   secrets.sh [--env ENV] check KEY...
 #   secrets.sh [--env ENV] run -- CMD...
+#   secrets.sh [--env ENV] open [KEY...]
 #   secrets.sh [--env ENV] path
 #
 # ENV is the environment the secrets are for, such as development, staging, or production.
@@ -15,12 +16,16 @@
 # check  says which keys have a value. It never prints a value.
 # run    runs CMD with every filled key from the file in its environment. Values in the
 #        file win over the same names already in the environment.
+# open   opens the file in the user's editor at the first missing KEY (or the first empty
+#        key when no KEY is given), and copies "PATH:LINE" to the clipboard. It prints
+#        "opened=EDITOR" or "opened=none", and "copied=yes" or "copied=no". It does not
+#        start an editor over SSH or in a cloud container, where no one would see it.
+#        VS Code comes first. $LOCAL_SECRETS_EDITOR names another editor command to use.
 # path   prints the path of the secrets file.
 #
 # need and check print one line per key, "set KEY" or "missing KEY line=N", then
-# "file=PATH". When a key is missing they also print "open=URL", a link that opens the
-# file in the editor at the first missing key. $LOCAL_SECRETS_EDITOR picks the editor's
-# URL scheme: vscode (the default), cursor, windsurf, or vscode-insiders.
+# "env=ENV" and "file=PATH". When a key is missing they also print "at=PATH:LINE" for the
+# first missing key.
 # Exit codes: 0 every key is set, 3 a key is missing, 1 error, 2 bad usage.
 #
 # The file is .env.ENV at the root of the main checkout, so every worktree and every
@@ -35,7 +40,7 @@
 set -uo pipefail
 
 die() { echo "secrets: $*" >&2; exit 1; }
-usage() { sed -n '2,33p' "$0" | sed 's/^# \{0,1\}//'; exit 2; }
+usage() { sed -n '2,38p' "$0" | sed 's/^# \{0,1\}//'; exit 2; }
 
 # The root of the main checkout, not of a linked worktree, so all worktrees share one file.
 # For a bare repo with worktrees (proj/.bare, proj/w1, proj/w2) it is the bare repo's parent.
@@ -86,11 +91,45 @@ in_file() { [ -f "$FILE" ] && grep -Eq "^[[:space:]]*(export[[:space:]]+)?$1[[:s
 # The line number of KEY in the file. Empty when not there.
 line_of() { [ -f "$FILE" ] && grep -En "^[[:space:]]*(export[[:space:]]+)?$1[[:space:]]*=" "$FILE" | tail -1 | cut -d: -f1; }
 
-# A link that opens the file at a line, such as vscode://file/home/cj/app/.env.production:12
-open_url() {
-  local path="${FILE//%/%25}"
-  path="${path// /%20}"; path="${path//#/%23}"; path="${path//\?/%3F}"
-  printf '%s://file%s:%s\n' "${LOCAL_SECRETS_EDITOR:-vscode}" "$path" "$1"
+# 0 when a person at this machine can see a window that opens: not over SSH and not in a
+# cloud container. A shell with no DISPLAY still counts: `code` reaches a running VS Code
+# through its own socket.
+local_screen() {
+  [ -z "${SSH_CONNECTION:-}${SSH_TTY:-}" ] || return 1
+  case "${CLAUDE_CODE_REMOTE_ENVIRONMENT_TYPE:-}" in cloud*) return 1 ;; esac
+}
+
+# Opens FILE at line $1 in VS Code, else in the first other editor that exists. Prints
+# the editor name. VS Code's own CLI inside the app is used when `code` is not on PATH.
+launch() {
+  local line="$1" e order=()
+  [ -n "${LOCAL_SECRETS_EDITOR:-}" ] && order+=("$LOCAL_SECRETS_EDITOR")
+  order+=(code /snap/bin/code "/Applications/Visual Studio Code.app/Contents/Resources/app/bin/code"
+    "$HOME/Applications/Visual Studio Code.app/Contents/Resources/app/bin/code"
+    cursor windsurf code-insiders zed subl webstorm idea)
+  for e in "${order[@]}"; do
+    command -v "$e" >/dev/null 2>&1 || continue
+    case "$(basename "$e")" in
+      webstorm|idea|pycharm|goland|rubymine|phpstorm) "$e" --line "$line" "$FILE" ;;
+      zed|subl) "$e" "$FILE:$line" ;;
+      *) "$e" -g "$FILE:$line" ;;
+    esac >/dev/null 2>&1 </dev/null && { echo "$(basename "$e")"; return 0; }
+  done
+  if [ "$(uname)" = Darwin ]; then
+    open -t "$FILE" >/dev/null 2>&1 && { echo "default-text-editor"; return 0; }
+  fi
+  command -v xdg-open >/dev/null 2>&1 && xdg-open "$FILE" >/dev/null 2>&1 && { echo xdg-open; return 0; }
+  return 1
+}
+
+# Copies $1 to the clipboard. 0 when it worked.
+copy() {
+  local c
+  for c in pbcopy wl-copy "xclip -selection clipboard" "xsel -ib" clip.exe; do
+    command -v "${c%% *}" >/dev/null 2>&1 || continue
+    printf '%s' "$1" | $c >/dev/null 2>&1 && return 0
+  done
+  return 1
 }
 
 is_set() { [ -n "$(file_value "$1")" ]; }
@@ -196,8 +235,27 @@ cmd_check() {
   echo "env=$ENVNAME"
   echo "file=$FILE"
   [ -z "$first" ] && return 0
-  echo "open=$(open_url "$first")"
+  echo "at=$FILE:$first"
   exit 3
+}
+
+cmd_open() {
+  [ -f "$FILE" ] || die "$FILE does not exist yet. Run need first."
+  local k n line=""
+  for k in "$@"; do
+    valid_key "$k" || { echo "secrets: '$k' is not a variable name" >&2; exit 2; }
+    is_set "$k" && continue
+    n="$(line_of "$k")"; [ -n "$n" ] && { line="$n"; break; }
+  done
+  if [ -z "$line" ] && [ $# -eq 0 ]; then
+    line="$(grep -En '^[[:space:]]*(export[[:space:]]+)?[A-Za-z_][A-Za-z0-9_]*[[:space:]]*=[[:space:]]*(""|'"''"')?[[:space:]]*$' "$FILE" | head -1 | cut -d: -f1)"
+  fi
+  line="${line:-1}"
+  local ed="none"
+  if local_screen; then ed="$(launch "$line")" || ed="none"; fi
+  echo "opened=$ed"
+  if local_screen && copy "$FILE:$line"; then echo "copied=yes"; else echo "copied=no"; fi
+  echo "at=$FILE:$line"
 }
 
 cmd_run() {
@@ -219,6 +277,7 @@ case "${1:-}" in
   need) shift; cmd_need "$@" ;;
   check) shift; cmd_check "$@" ;;
   run) shift; cmd_run "$@" ;;
+  open) shift; cmd_open "$@" ;;
   path) echo "$FILE" ;;
   *) usage ;;
 esac
