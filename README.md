@@ -93,6 +93,10 @@ injects [WRITING-STANDARD.md](WRITING-STANDARD.md) into every session — not on
 the skills, but in every reply, document and commit message. Nobody has to remember to
 ask for it.
 
+The same hook also tells every agent how to give a VS Code file link that opens when
+you click it in the Claude app. A bare `vscode://` link does nothing there, so the
+agent wraps it in `https://vscode.dev/redirect?url=`.
+
 The hook needs a fresh session before it fires. It fails silently: a missing or
 unreadable standard file never breaks a session.
 
