@@ -95,8 +95,10 @@ line of the first missing key.
      file" box (Cmd+P in VS Code).
    - Always give the plain `PATH:LINE` from `at=`, in backticks, on its own line. Many
      terminals and IDEs let the user Cmd+click it.
-   - Do not make `vscode://` or other editor links. Chat apps and many terminals block
-     them.
+   - Do not make a bare `vscode://` link, because chat apps block it. If the user
+     is on the same machine, also give the link through
+     `https://vscode.dev/redirect?url=` with the `vscode://file/PATH:LINE` link
+     URL-encoded. The session-start hook gives the format.
    - Name every missing key in one message, each with its line number.
    - Always name the environment. A production value in the wrong file is a real risk.
    - `open` starts no editor over SSH or in a cloud container, because the user cannot
